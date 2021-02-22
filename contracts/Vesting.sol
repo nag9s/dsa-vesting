@@ -16,6 +16,7 @@ contract TokenVesting is Initializable {
     address public token;
     address public recipient;
     address public owner;
+    address public factory;
 
     uint public vestingAmount;
     uint public vestingBegin;
@@ -30,6 +31,7 @@ contract TokenVesting is Initializable {
         address token_,
         address recipient_,
         address owner_,
+        address factory_,
         uint vestingAmount_,
         uint vestingBegin_,
         uint vestingCliff_,
@@ -43,6 +45,7 @@ contract TokenVesting is Initializable {
         token = token_;
         recipient = recipient_;
         owner = owner_;
+        factory = factory_;
 
         vestingAmount = vestingAmount_;
         vestingBegin = vestingBegin_;
@@ -82,6 +85,10 @@ contract TokenVesting is Initializable {
         require(msg.sender == owner, 'TokenVesting::terminate: unauthorized');
 
         claim();
+
+        TokenInterface token_ = TokenInterface(token);
+        uint amount = token_.balanceOf(address(this));
+        token_.transfer(factory, amount);
 
         isActive = false;
     }
