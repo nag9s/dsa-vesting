@@ -29,6 +29,7 @@ contract VestingFactory {
         uint vestingEnd_
     ) public {
         require(msg.sender == owner, 'VestingFactory::startVesting: unauthorized');
+        require(recipients[recipient_] == address(0), 'VestingFactory::startVesting: unauthorized');
 
         bytes32 salt = keccak256(abi.encode(recipient_, vestingAmount_, vestingBegin_, vestingCliff_, vestingEnd_));
 
@@ -46,6 +47,7 @@ contract VestingFactory {
         );
 
         (bool success,) = vesting.call(initData);
+        // TODO: Add safe token transfer function here
         require(success, 'VestingFactory::startVesting: failed to initialize');
 
         recipients[recipient_] = vesting;
