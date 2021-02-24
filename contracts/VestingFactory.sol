@@ -69,6 +69,20 @@ contract VestingFactory {
         emit LogVestingStarted(recipient_, vesting, vestingAmount_);
     }
 
+    function startMultipleVesting(
+        address[] memory recipients_,
+        uint[] memory vestingAmounts_,
+        uint[] memory vestingBegins_,
+        uint[] memory vestingCliffs_,
+        uint[] memory vestingEnds_
+    ) public isOwner {
+        uint _length = recipients_.length;
+        require(vestingAmounts_.length == _length && vestingBegins_.length == _length && vestingCliffs_.length == _length && vestingEnds_.length == _length, "VestingFactory::startMultipleVesting: different lengths");
+        for (uint i = 0; i < _length; i++) {
+            startVesting(recipients_[i], vestingAmounts_[i], vestingBegins_[i], vestingCliffs_[i], vestingEnds_[i]);
+        }
+    }
+
     function updateRecipient(address _oldRecipient, address _newRecipient) public {
         address _vesting = recipients[_oldRecipient];
         require(msg.sender == _vesting, 'VestingFactory::startVesting: unauthorized');
