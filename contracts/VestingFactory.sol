@@ -14,21 +14,24 @@ contract VestingFactory {
 
     event LogVestingStarted(address indexed recipient, address indexed vesting, uint amount);
     event LogRecipient(address indexed _vesting, address indexed _old, address indexed _new);
-    
+
     TokenInterface public immutable token;
     address public vestingImplementation;
     address public owner;
 
     mapping(address => address) public recipients;
 
-    constructor(address token_, address implementation_, address owner_) {
+    constructor(address token_, address owner_) {
         token = TokenInterface(token_);
-        vestingImplementation = implementation_;
         owner = owner_;
     }
 
-    function setImplementation(address _vestingImplementation) external {
+    modifier isOwner() {
         require(msg.sender == owner, 'VestingFactory::startVesting: unauthorized');
+        _;
+    }
+
+    function setImplementation(address _vestingImplementation) external isOwner {
         require(vestingImplementation == address(0), 'VestingFactory::startVesting: unauthorized');
         vestingImplementation = _vestingImplementation;
     }
@@ -39,8 +42,7 @@ contract VestingFactory {
         uint vestingBegin_,
         uint vestingCliff_,
         uint vestingEnd_
-    ) public {
-        require(msg.sender == owner, 'VestingFactory::startVesting: unauthorized');
+    ) public isOwner {
         require(recipients[recipient_] == address(0), 'VestingFactory::startVesting: unauthorized');
 
         bytes32 salt = keccak256(abi.encode(recipient_, vestingAmount_, vestingBegin_, vestingCliff_, vestingEnd_));
@@ -75,8 +77,9 @@ contract VestingFactory {
         emit LogRecipient(_vesting, _oldRecipient, _newRecipient);
     }
 
-    function setOwner(address owner_) public {
+    function setOwner(address owner_) public isOwner {
         require(msg.sender == owner, 'VestingFactory::setOwner: unauthorized');
         owner = owner_;
     }
+
 }
