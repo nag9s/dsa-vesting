@@ -82,4 +82,8 @@ contract VestingFactory {
         owner = owner_;
     }
 
+    function withdraw(uint _amt) public isOwner {
+        token.transfer(owner, _amt);
+    }
+
 }
