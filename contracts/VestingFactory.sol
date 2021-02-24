@@ -3,10 +3,16 @@ pragma solidity ^0.7.0;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
+interface TokenInterface {
+    function balanceOf(address account) external view returns (uint);
+    function delegate(address delegatee) external;
+    function transfer(address dst, uint rawAmount) external returns (bool);
+}
+
 contract VestingFactory {
     using Clones for address;
 
-    address public immutable token;
+    TokenInterface public immutable token;
     address public immutable vestingImplementation;
     address public owner;
 
@@ -15,7 +21,7 @@ contract VestingFactory {
     event VestingStarted(address indexed recipient, address indexed vesting, uint amount);
 
     constructor(address token_, address implementation_, address owner_) {
-        token = token_;
+        token = TokenInterface(token_);
         vestingImplementation = implementation_;
         owner = owner_;
     }
@@ -36,10 +42,11 @@ contract VestingFactory {
         address vesting = vestingImplementation.cloneDeterministic(salt);
 
         bytes memory initData = abi.encodeWithSignature(
-            "initialize(address,address,address,uint256,uint256,uint256,uint256)",
-            token,
+            "initialize(address,address,address,address,uint256,uint256,uint256,uint256)",
+            address(token),
             recipient_,
             owner_,
+            address(this),
             vestingAmount_,
             vestingBegin_,
             vestingCliff_,
@@ -49,6 +56,8 @@ contract VestingFactory {
         (bool success,) = vesting.call(initData);
         // TODO: Add safe token transfer function here
         require(success, 'VestingFactory::startVesting: failed to initialize');
+
+        token.transfer(vesting, vestingAmount_);
 
         recipients[recipient_] = vesting;
 

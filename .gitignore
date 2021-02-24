@@ -3,3 +3,8 @@ node_modules
 #Hardhat files
 cache
 artifacts
+
+coverage.json
+coverage
+public/css/main.css
+.nyc_output/*
