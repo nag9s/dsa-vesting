@@ -21,9 +21,9 @@ contract TokenVesting is Initializable {
     event LogClaim(uint _claimAmount);
     event LogDelegate(address indexed _delegate);
 
-    address public constant token = address(0); // TODO: Add static factory address
+    address public constant token = 0x5FbDB2315678afecb367f032d93F642f64180aa3; // TODO: Add static factory address
     address public recipient;
-    address public constant factory = address(0); // TODO: Add static factory address
+    address public constant factory = 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512; // TODO: Add static factory address
 
     uint public vestingAmount;
     uint public vestingBegin;
