@@ -12,29 +12,37 @@ interface TokenInterface {
 contract VestingFactory {
     using Clones for address;
 
+    event LogVestingStarted(address indexed recipient, address indexed vesting, uint amount);
+    event LogRecipient(address indexed _vesting, address indexed _old, address indexed _new);
+
     TokenInterface public immutable token;
-    address public immutable vestingImplementation;
+    address public vestingImplementation;
     address public owner;
 
     mapping(address => address) public recipients;
 
-    event VestingStarted(address indexed recipient, address indexed vesting, uint amount);
-
-    constructor(address token_, address implementation_, address owner_) {
+    constructor(address token_, address owner_) {
         token = TokenInterface(token_);
-        vestingImplementation = implementation_;
         owner = owner_;
+    }
+
+    modifier isOwner() {
+        require(msg.sender == owner, 'VestingFactory::startVesting: unauthorized');
+        _;
+    }
+
+    function setImplementation(address _vestingImplementation) external isOwner {
+        require(vestingImplementation == address(0), 'VestingFactory::startVesting: unauthorized');
+        vestingImplementation = _vestingImplementation;
     }
 
     function startVesting(
         address recipient_,
-        address owner_,
         uint vestingAmount_,
         uint vestingBegin_,
         uint vestingCliff_,
         uint vestingEnd_
-    ) public {
-        require(msg.sender == owner, 'VestingFactory::startVesting: unauthorized');
+    ) public isOwner {
         require(recipients[recipient_] == address(0), 'VestingFactory::startVesting: unauthorized');
 
         bytes32 salt = keccak256(abi.encode(recipient_, vestingAmount_, vestingBegin_, vestingCliff_, vestingEnd_));
@@ -42,11 +50,8 @@ contract VestingFactory {
         address vesting = vestingImplementation.cloneDeterministic(salt);
 
         bytes memory initData = abi.encodeWithSignature(
-            "initialize(address,address,address,address,uint256,uint256,uint256,uint256)",
-            address(token),
+            "initialize(address,uint256,uint256,uint256,uint256)",
             recipient_,
-            owner_,
-            address(this),
             vestingAmount_,
             vestingBegin_,
             vestingCliff_,
@@ -61,11 +66,38 @@ contract VestingFactory {
 
         recipients[recipient_] = vesting;
 
-        emit VestingStarted(recipient_, vesting, vestingAmount_);
+        emit LogVestingStarted(recipient_, vesting, vestingAmount_);
     }
 
-    function setOwner(address owner_) public {
+    function startMultipleVesting(
+        address[] memory recipients_,
+        uint[] memory vestingAmounts_,
+        uint[] memory vestingBegins_,
+        uint[] memory vestingCliffs_,
+        uint[] memory vestingEnds_
+    ) public isOwner {
+        uint _length = recipients_.length;
+        require(vestingAmounts_.length == _length && vestingBegins_.length == _length && vestingCliffs_.length == _length && vestingEnds_.length == _length, "VestingFactory::startMultipleVesting: different lengths");
+        for (uint i = 0; i < _length; i++) {
+            startVesting(recipients_[i], vestingAmounts_[i], vestingBegins_[i], vestingCliffs_[i], vestingEnds_[i]);
+        }
+    }
+
+    function updateRecipient(address _oldRecipient, address _newRecipient) public {
+        address _vesting = recipients[_oldRecipient];
+        require(msg.sender == _vesting, 'VestingFactory::startVesting: unauthorized');
+        recipients[_newRecipient] = _vesting;
+        delete recipients[_oldRecipient];
+        emit LogRecipient(_vesting, _oldRecipient, _newRecipient);
+    }
+
+    function setOwner(address owner_) public isOwner {
         require(msg.sender == owner, 'VestingFactory::setOwner: unauthorized');
         owner = owner_;
     }
+
+    function withdraw(uint _amt) public isOwner {
+        token.transfer(owner, _amt);
+    }
+
 }
