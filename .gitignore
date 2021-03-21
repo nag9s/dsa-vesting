@@ -8,3 +8,5 @@ coverage.json
 coverage
 public/css/main.css
 .nyc_output/*
+
+.env

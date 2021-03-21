@@ -26,11 +26,14 @@ describe("Factory", function() {
 
     await token.deployed()
 
+    console.log(token.address)
+
     const Factory = await ethers.getContractFactory("VestingFactory");
-    factory = await Factory.deploy(token.address, owner.address);
+    factory = await Factory.deploy(token.address);
 
     await factory.deployed()
 
+    console.log(factory.address)
     const TokenVesting = await ethers.getContractFactory("TokenVesting");
     tokenVesting = await TokenVesting.deploy();
 
@@ -47,14 +50,12 @@ describe("Factory", function() {
     it("should match deployed", async function() {
       const token_ = await factory.token();
       const impl_ = await factory.vestingImplementation();
-      const owner_ = await factory.owner();
 
       const token__ = await tokenVesting.token();
       const factory_ = await tokenVesting.factory();
 
       expect(token_).to.be.equal(token.address);
       expect(impl_).to.be.equal(tokenVesting.address);
-      expect(owner_).to.be.equal(owner.address);
 
       expect(token__).to.be.equal(token.address);
       expect(factory_).to.be.equal(factory.address);
@@ -324,18 +325,6 @@ describe("Factory", function() {
 
       const finalBalance = await token.balanceOf(owner.address)
       expect(finalBalance).to.be.gt(initBalance)
-    })
-
-    it("owner can update the owner", async function() {
-      const newOwner = accounts[5]
-
-      const tx = await factory.connect(owner).setOwner(newOwner.address)
-      await tx.wait()
-
-      const owner_ = await factory.owner()
-      expect(owner_).to.be.equal(newOwner.address)
- 
-      await expect(factory.connect(owner).withdraw(100000)).to.be.revertedWith('VestingFactory::startVesting: unauthorized')
     })
   })
 })

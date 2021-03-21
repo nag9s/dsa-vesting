@@ -3,6 +3,8 @@ pragma solidity ^0.7.0;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
+import "hardhat/console.sol";
+
 interface TokenInterface {
     function balanceOf(address account) external view returns (uint);
     function delegate(address delegatee) external;
@@ -53,10 +55,13 @@ contract VestingFactory {
 
         bytes32 salt = keccak256(abi.encode(recipient_, vestingAmount_, vestingBegin_, vestingCliff_, vestingEnd_));
 
+        uint256 initGas = gasleft();
         address vesting = vestingImplementation.cloneDeterministic(salt);
+        uint256 finalGas = initGas - gasleft();
+        console.log(finalGas);
 
         bytes memory initData = abi.encodeWithSignature(
-            "initialize(address,uint256,uint256,uint256,uint256)",
+            "initialize(address,uint256,uint32,uint32,uint32)",
             recipient_,
             vestingAmount_,
             vestingBegin_,
