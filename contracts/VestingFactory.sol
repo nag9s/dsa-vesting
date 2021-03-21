@@ -9,6 +9,10 @@ interface TokenInterface {
     function transfer(address dst, uint rawAmount) external returns (bool);
 }
 
+interface IndexInterface {
+    function master() external view returns (address);
+}
+
 contract VestingFactory {
     using Clones for address;
 
@@ -17,21 +21,23 @@ contract VestingFactory {
 
     TokenInterface public immutable token;
     address public vestingImplementation;
-    address public owner;
+    IndexInterface public constant instaIndex = IndexInterface(0x2971AdFa57b20E5a416aE5a708A8655A9c74f723);
 
     mapping(address => address) public recipients;
 
-    constructor(address token_, address owner_) {
+    constructor(address token_) {
         token = TokenInterface(token_);
-        owner = owner_;
     }
 
-    modifier isOwner() {
-        require(msg.sender == owner, 'VestingFactory::startVesting: unauthorized');
+    /**
+     * @dev Throws if the sender not is Master Address from InstaIndex
+    */
+    modifier isMaster {
+        require(msg.sender == instaIndex.master(), "not-master");
         _;
     }
 
-    function setImplementation(address _vestingImplementation) external isOwner {
+    function setImplementation(address _vestingImplementation) external isMaster {
         require(vestingImplementation == address(0), 'VestingFactory::startVesting: unauthorized');
         vestingImplementation = _vestingImplementation;
     }
@@ -42,7 +48,7 @@ contract VestingFactory {
         uint vestingBegin_,
         uint vestingCliff_,
         uint vestingEnd_
-    ) public isOwner {
+    ) public isMaster {
         require(recipients[recipient_] == address(0), 'VestingFactory::startVesting: unauthorized');
 
         bytes32 salt = keccak256(abi.encode(recipient_, vestingAmount_, vestingBegin_, vestingCliff_, vestingEnd_));
@@ -59,7 +65,7 @@ contract VestingFactory {
         );
 
         (bool success,) = vesting.call(initData);
-        // TODO: Add safe token transfer function here
+
         require(success, 'VestingFactory::startVesting: failed to initialize');
 
         token.transfer(vesting, vestingAmount_);
@@ -75,7 +81,7 @@ contract VestingFactory {
         uint[] memory vestingBegins_,
         uint[] memory vestingCliffs_,
         uint[] memory vestingEnds_
-    ) public isOwner {
+    ) public isMaster {
         uint _length = recipients_.length;
         require(vestingAmounts_.length == _length && vestingBegins_.length == _length && vestingCliffs_.length == _length && vestingEnds_.length == _length, "VestingFactory::startMultipleVesting: different lengths");
         for (uint i = 0; i < _length; i++) {
@@ -91,13 +97,8 @@ contract VestingFactory {
         emit LogRecipient(_vesting, _oldRecipient, _newRecipient);
     }
 
-    function setOwner(address owner_) public isOwner {
-        require(msg.sender == owner, 'VestingFactory::setOwner: unauthorized');
-        owner = owner_;
-    }
-
-    function withdraw(uint _amt) public isOwner {
-        token.transfer(owner, _amt);
+    function withdraw(uint _amt) public isMaster {
+        token.transfer(instaIndex.master(), _amt);
     }
 
 }
