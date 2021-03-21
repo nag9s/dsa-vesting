@@ -15,7 +15,7 @@ interface VestingFactoryInterface {
     function updateRecipient(address _oldRecipient, address _newRecipient) external;
 }
 
-contract TokenVesting is Initializable {
+contract InstaTokenVesting is Initializable {
     using SafeMath for uint;
 
     event LogClaim(uint _claimAmount);

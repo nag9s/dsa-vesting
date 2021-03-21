@@ -15,7 +15,7 @@ interface IndexInterface {
     function master() external view returns (address);
 }
 
-contract VestingFactory {
+contract InstaVestingFactory {
     using Clones for address;
 
     event LogVestingStarted(address indexed recipient, address indexed vesting, uint amount);
