@@ -57,19 +57,19 @@ contract InstaVestingFactory {
 
         uint256 initGas = gasleft();
         address vesting = vestingImplementation.cloneDeterministic(salt);
-        uint256 finalGas = initGas - gasleft();
-        console.log(finalGas);
 
         bytes memory initData = abi.encodeWithSignature(
-            "initialize(address,uint256,uint256,uint256,uint256)",
+            "initialize(address,uint256,uint32,uint32,uint32)",
             recipient_,
             vestingAmount_,
-            vestingBegin_,
-            vestingCliff_,
-            vestingEnd_
+            uint32(vestingBegin_),
+            uint32(vestingCliff_),
+            uint32(vestingEnd_)
         );
 
         (bool success,) = vesting.call(initData);
+        uint256 finalGas = initGas - gasleft();
+        console.log(finalGas);
 
         require(success, 'VestingFactory::startVesting: failed to initialize');
 

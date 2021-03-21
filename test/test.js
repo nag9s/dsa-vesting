@@ -28,13 +28,13 @@ describe("Factory", function() {
 
     console.log(token.address)
 
-    const Factory = await ethers.getContractFactory("VestingFactory");
+    const Factory = await ethers.getContractFactory("InstaVestingFactory");
     factory = await Factory.deploy(token.address);
 
     await factory.deployed()
 
     console.log(factory.address)
-    const TokenVesting = await ethers.getContractFactory("TokenVesting");
+    const TokenVesting = await ethers.getContractFactory("InstaTokenVesting");
     tokenVesting = await TokenVesting.deploy();
 
     await tokenVesting.deployed()
@@ -90,7 +90,7 @@ describe("Factory", function() {
 
       const deployedVesting = await factory.recipients(receipient.address)
 
-      const vesting_ = await ethers.getContractAt("TokenVesting", deployedVesting)
+      const vesting_ = await ethers.getContractAt("InstaTokenVesting", deployedVesting)
 
       const token_ = await vesting_.token();
       const recipient_ = await vesting_.recipient();
@@ -245,7 +245,7 @@ describe("Factory", function() {
 
       const deployedVesting = await factory.recipients(receipient1.address)
 
-      const vesting_ = await ethers.getContractAt("TokenVesting", deployedVesting)
+      const vesting_ = await ethers.getContractAt("InstaTokenVesting", deployedVesting)
 
       const token_ = await vesting_.token();
       const recipient_ = await vesting_.recipient();

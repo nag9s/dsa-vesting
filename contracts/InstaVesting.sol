@@ -26,20 +26,20 @@ contract InstaTokenVesting is Initializable {
     address public constant factory = 0xc6e7DF5E7b4f2A278906862b61205850344D4e7d; // TODO: Add static factory address
 
     uint256 public vestingAmount;
-    uint256 public vestingBegin;
-    uint256 public vestingCliff;
-    uint256 public vestingEnd;
+    uint32 public vestingBegin;
+    uint32 public vestingCliff;
+    uint32 public vestingEnd;
 
-    uint256 public lastUpdate;
+    uint32 public lastUpdate;
 
-    uint256 public terminateTime;
+    uint32 public terminateTime;
 
     function initialize(
         address recipient_,
         uint256 vestingAmount_,
-        uint256 vestingBegin_,
-        uint256 vestingCliff_,
-        uint256 vestingEnd_
+        uint32 vestingBegin_,
+        uint32 vestingCliff_,
+        uint32 vestingEnd_
     ) public initializer {
         require(vestingBegin_ >= block.timestamp, 'TokenVesting::initialize: vesting begin too early');
         require(vestingCliff_ >= vestingBegin_, 'TokenVesting::initialize: cliff is too early');
@@ -69,7 +69,7 @@ contract InstaTokenVesting is Initializable {
             amount = TokenInterface(token).balanceOf(address(this));
         } else {
             amount = vestingAmount.mul(block.timestamp - lastUpdate).div(vestingEnd - vestingBegin);
-            lastUpdate = block.timestamp;
+            lastUpdate = uint32(block.timestamp);
         }
         TokenInterface(token).transfer(recipient, amount);
         emit LogClaim(amount);
@@ -91,7 +91,7 @@ contract InstaTokenVesting is Initializable {
         uint amount = token_.balanceOf(address(this));
         token_.transfer(factory, amount);
 
-        terminateTime = block.timestamp;
+        terminateTime = uint32(block.timestamp);
     }
 
 }
