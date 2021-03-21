@@ -26,9 +26,9 @@ contract TokenVesting is Initializable {
     address public constant factory = 0xc6e7DF5E7b4f2A278906862b61205850344D4e7d; // TODO: Add static factory address
 
     uint256 public vestingAmount;
-    uint32 public vestingBegin;
-    uint32 public vestingCliff;
-    uint32 public vestingEnd;
+    uint256 public vestingBegin;
+    uint256 public vestingCliff;
+    uint256 public vestingEnd;
 
     uint256 public lastUpdate;
 
@@ -37,9 +37,9 @@ contract TokenVesting is Initializable {
     function initialize(
         address recipient_,
         uint256 vestingAmount_,
-        uint32 vestingBegin_,
-        uint32 vestingCliff_,
-        uint32 vestingEnd_
+        uint256 vestingBegin_,
+        uint256 vestingCliff_,
+        uint256 vestingEnd_
     ) public initializer {
         require(vestingBegin_ >= block.timestamp, 'TokenVesting::initialize: vesting begin too early');
         require(vestingCliff_ >= vestingBegin_, 'TokenVesting::initialize: cliff is too early');
