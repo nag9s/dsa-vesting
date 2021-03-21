@@ -35,7 +35,7 @@ contract VestingFactory {
      * @dev Throws if the sender not is Master Address from InstaIndex
     */
     modifier isMaster {
-        // require(msg.sender == instaIndex.master(), "not-master");
+        require(msg.sender == instaIndex.master(), "not-master");
         _;
     }
 
