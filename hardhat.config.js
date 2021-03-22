@@ -1,5 +1,7 @@
+require("@nomiclabs/hardhat-ethers");
 require("@nomiclabs/hardhat-waffle");
 require("solidity-coverage");
+require("@nomiclabs/hardhat-etherscan");
 
 require("dotenv").config();
 const ALCHEMY_ID = process.env.ALCHEMY_ID;
@@ -22,5 +24,8 @@ module.exports = {
       blockGasLimit: 12000000,
     },
   },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN
+  }
 };
 

@@ -2,38 +2,31 @@ const hre = require("hardhat");
 const { expect } = require("chai");
 const { ethers, network } = hre;
 
-// describe("Greeter", function() {
-//   it("Should return the new greeting once it's changed", async function() {
-//     const Greeter = await ethers.getContractFactory("Greeter");
-//     const greeter = await Greeter.deploy("Hello, world!");
-    
-//     await greeter.deployed();
-//     expect(await greeter.greet()).to.equal("Hello, world!");
-
-//     await greeter.setGreeting("Hola, mundo!");
-//     expect(await greeter.greet()).to.equal("Hola, mundo!");
-//   });
-// });
-
 describe("Factory", function() {
-  let token, tokenVesting, factory, accounts, owner, ethereum
+  let token, tokenVesting, factory, accounts, owner, ethereum, masterAddress
   before(async function() {
+    masterAddress = "0xb1DC62EC38E6E3857a887210C38418E4A17Da5B2"
+    await hre.network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [ masterAddress ]
+    })
     accounts = await ethers.getSigners();
-    owner = accounts[0]
+    owner = ethers.provider.getSigner(masterAddress)
     
     const Token = await ethers.getContractFactory("MockToken");
     token = await Token.deploy("Token", "TKN");
 
     await token.deployed()
 
-    console.log(token.address)
+    console.log("Token address:", token.address)
 
     const Factory = await ethers.getContractFactory("InstaVestingFactory");
     factory = await Factory.deploy(token.address);
 
     await factory.deployed()
 
-    console.log(factory.address)
+    console.log("Factory address:", factory.address)
+
     const TokenVesting = await ethers.getContractFactory("InstaTokenVesting");
     tokenVesting = await TokenVesting.deploy();
 
@@ -41,7 +34,7 @@ describe("Factory", function() {
 
     await token.mint(factory.address, ethers.utils.parseEther("1000000"));
 
-    await factory.setImplementation(tokenVesting.address);
+    await factory.connect(owner).setImplementation(tokenVesting.address);
 
     ethereum = network.provider
   })
@@ -76,7 +69,7 @@ describe("Factory", function() {
       const vestingEnd = Math.round(aMonth.getTime() / 1000)
       const vestingAmount = ethers.utils.parseEther("100")
 
-      const tx = await factory.startVesting(
+      const tx = await factory.connect(owner).startVesting(
         receipient.address,
         vestingAmount,
         vestingStart,
@@ -126,7 +119,7 @@ describe("Factory", function() {
     it("recipient cannot claim before vesting cliff", async function() {
       const receipient = accounts[1];
 
-      await ethereum.send("evm_setNextBlockTimestamp", [vestingStartTs.toNumber()]);
+      await ethereum.send("evm_setNextBlockTimestamp", [vestingStartTs]);
       await ethereum.send("evm_mine", []);
 
       await expect(vesting.connect(receipient).claim()).to.be.revertedWith('TokenVesting::claim: not time yet');
@@ -135,7 +128,7 @@ describe("Factory", function() {
     it("recipient can claim at cliff", async function() {
       const receipient = accounts[1];
 
-      await ethereum.send("evm_setNextBlockTimestamp", [vestingCliffTs.toNumber()]);
+      await ethereum.send("evm_setNextBlockTimestamp", [vestingCliffTs]);
       await ethereum.send("evm_mine", []);
 
       const initBalance = await token.balanceOf(receipient.address);
@@ -172,7 +165,7 @@ describe("Factory", function() {
     it("recipient can claim after cliff", async function() {
       const receipient = accounts[2];
 
-      await ethereum.send("evm_setNextBlockTimestamp", [vestingCliffTs.toNumber() + 34]);
+      await ethereum.send("evm_setNextBlockTimestamp", [vestingCliffTs + 34]);
       await ethereum.send("evm_mine", []);
 
       const initBalance = await token.balanceOf(vesting.address);
@@ -194,7 +187,7 @@ describe("Factory", function() {
     it("recipient can claim after end", async function() {
       const receipient = accounts[2];
 
-      await ethereum.send("evm_setNextBlockTimestamp", [vestingEndTs.toNumber() + 1]);
+      await ethereum.send("evm_setNextBlockTimestamp", [vestingEndTs + 1]);
       await ethereum.send("evm_mine", []);
 
       const initBalance = await token.balanceOf(vesting.address);
@@ -219,7 +212,7 @@ describe("Factory", function() {
 
       const receipients = [receipient1.address, receipient2.address]
 
-      const vestingStart = vestingEndTs.toNumber() + 10
+      const vestingStart = vestingEndTs + 10
       const vestingCliff = vestingStart + 20
       const vestingEnd = vestingCliff + 1440
 
@@ -231,7 +224,7 @@ describe("Factory", function() {
       const vestingAmount2 = ethers.utils.parseEther("250")
       const vestingAmounts = [vestingAmount1, vestingAmount2]
 
-      const tx = await factory.startMultipleVesting(
+      const tx = await factory.connect(owner).startMultipleVesting(
         receipients,
         vestingAmounts,
         vestingStarts,
@@ -276,7 +269,7 @@ describe("Factory", function() {
     it("recipient can claim after cliff", async function() {
       const receipient = accounts[3];
 
-      await ethereum.send("evm_setNextBlockTimestamp", [vestingCliffTs.toNumber() + 60]);
+      await ethereum.send("evm_setNextBlockTimestamp", [vestingCliffTs + 60]);
       await ethereum.send("evm_mine", []);
 
       const initBalance = await token.balanceOf(receipient.address);
@@ -294,14 +287,14 @@ describe("Factory", function() {
     it("owner can terminate", async function() {
       const receipient = accounts[3];
 
-      const time = (vestingEndTs.toNumber() + vestingStartTs.toNumber()) / 2
+      const time = (vestingEndTs + vestingStartTs) / 2
 
       await ethereum.send("evm_setNextBlockTimestamp", [time]);
       await ethereum.send("evm_mine", []);
 
       const initBalance = await token.balanceOf(factory.address);
 
-      const tx = await vesting.connect(owner).terminate()
+      const tx = await factory.connect(owner).terminate(receipient.address)
       await tx.wait()
 
       const finalBalanceOfFactory = await token.balanceOf(factory.address);
@@ -318,12 +311,12 @@ describe("Factory", function() {
     })
 
     it("onwer can withdraw from factory", async function() {
-      const initBalance = await token.balanceOf(owner.address)
+      const initBalance = await token.balanceOf(masterAddress)
 
-      const tx = await factory.connect(owner).withdraw(100000)
+      const tx = await factory.connect(owner).withdraw('100000')
       await tx.wait()
 
-      const finalBalance = await token.balanceOf(owner.address)
+      const finalBalance = await token.balanceOf(masterAddress)
       expect(finalBalance).to.be.gt(initBalance)
     })
   })

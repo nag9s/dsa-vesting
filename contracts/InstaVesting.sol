@@ -11,7 +11,6 @@ interface TokenInterface {
 }
 
 interface VestingFactoryInterface {
-    function owner() external view returns (address);
     function updateRecipient(address _oldRecipient, address _newRecipient) external;
 }
 
@@ -83,7 +82,7 @@ contract InstaTokenVesting is Initializable {
 
     function terminate() public {
         require(terminateTime == 0, 'TokenVesting::terminate: already terminated');
-        require(msg.sender == VestingFactoryInterface(factory).owner(), 'TokenVesting::terminate: unauthorized');
+        require(msg.sender == factory, 'TokenVesting::terminate: unauthorized');
 
         claim();
 

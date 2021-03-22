@@ -15,11 +15,16 @@ interface IndexInterface {
     function master() external view returns (address);
 }
 
+interface InstaVestingInterface {
+    function terminate() external;
+}
+
 contract InstaVestingFactory {
     using Clones for address;
 
     event LogVestingStarted(address indexed recipient, address indexed vesting, uint amount);
     event LogRecipient(address indexed _vesting, address indexed _old, address indexed _new);
+    event LogTerminate(address indexed recipient, address indexed vesting, uint timestamp);
 
     TokenInterface public immutable token;
     address public vestingImplementation;
@@ -102,7 +107,15 @@ contract InstaVestingFactory {
         emit LogRecipient(_vesting, _oldRecipient, _newRecipient);
     }
 
+    function terminate(address _recipient) public isMaster {
+        address _vesting = recipients[_recipient];
+        InstaVestingInterface(_vesting).terminate();
+
+        emit LogTerminate(_recipient, _vesting, block.timestamp);
+    }
+
     function withdraw(uint _amt) public isMaster {
+        require(token.balanceOf(address(this)) >= _amt, 'VestingFactory::withdraw: insufficient balance');
         token.transfer(instaIndex.master(), _amt);
     }
 
