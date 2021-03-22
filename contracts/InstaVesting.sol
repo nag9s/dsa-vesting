@@ -11,35 +11,34 @@ interface TokenInterface {
 }
 
 interface VestingFactoryInterface {
-    function owner() external view returns (address);
     function updateRecipient(address _oldRecipient, address _newRecipient) external;
 }
 
-contract TokenVesting is Initializable {
+contract InstaTokenVesting is Initializable {
     using SafeMath for uint;
 
     event LogClaim(uint _claimAmount);
     event LogDelegate(address indexed _delegate);
 
-    address public constant token = 0x5FbDB2315678afecb367f032d93F642f64180aa3; // TODO: Add static token address
+    address public constant token = 0x3Aa5ebB10DC797CAC828524e59A333d0A371443c; // TODO: Add static token address
     address public recipient;
-    address public constant factory = 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512; // TODO: Add static factory address
+    address public constant factory = 0xc6e7DF5E7b4f2A278906862b61205850344D4e7d; // TODO: Add static factory address
 
-    uint public vestingAmount;
-    uint public vestingBegin;
-    uint public vestingCliff;
-    uint public vestingEnd;
+    uint256 public vestingAmount;
+    uint32 public vestingBegin;
+    uint32 public vestingCliff;
+    uint32 public vestingEnd;
 
-    uint public lastUpdate;
+    uint32 public lastUpdate;
 
-    uint public terminateTime;
+    uint32 public terminateTime;
 
     function initialize(
         address recipient_,
-        uint vestingAmount_,
-        uint vestingBegin_,
-        uint vestingCliff_,
-        uint vestingEnd_
+        uint256 vestingAmount_,
+        uint32 vestingBegin_,
+        uint32 vestingCliff_,
+        uint32 vestingEnd_
     ) public initializer {
         require(vestingBegin_ >= block.timestamp, 'TokenVesting::initialize: vesting begin too early');
         require(vestingCliff_ >= vestingBegin_, 'TokenVesting::initialize: cliff is too early');
@@ -69,7 +68,7 @@ contract TokenVesting is Initializable {
             amount = TokenInterface(token).balanceOf(address(this));
         } else {
             amount = vestingAmount.mul(block.timestamp - lastUpdate).div(vestingEnd - vestingBegin);
-            lastUpdate = block.timestamp;
+            lastUpdate = uint32(block.timestamp);
         }
         TokenInterface(token).transfer(recipient, amount);
         emit LogClaim(amount);
@@ -83,7 +82,7 @@ contract TokenVesting is Initializable {
 
     function terminate() public {
         require(terminateTime == 0, 'TokenVesting::terminate: already terminated');
-        require(msg.sender == VestingFactoryInterface(factory).owner(), 'TokenVesting::terminate: unauthorized');
+        require(msg.sender == factory, 'TokenVesting::terminate: unauthorized');
 
         claim();
 
@@ -91,7 +90,7 @@ contract TokenVesting is Initializable {
         uint amount = token_.balanceOf(address(this));
         token_.transfer(factory, amount);
 
-        terminateTime = block.timestamp;
+        terminateTime = uint32(block.timestamp);
     }
 
 }
