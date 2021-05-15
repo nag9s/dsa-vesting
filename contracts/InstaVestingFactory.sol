@@ -22,7 +22,7 @@ interface InstaVestingInterface {
 contract InstaVestingFactory {
     using Clones for address;
 
-    event LogVestingStarted(address indexed recipient, address indexed vesting, uint amount);
+    event LogVestingStarted(address indexed delegator, address indexed recipient, address indexed vesting, uint amount);
     event LogRecipient(address indexed _vesting, address indexed _old, address indexed _new);
     event LogTerminate(address indexed recipient, address indexed vesting, uint timestamp);
 
@@ -50,6 +50,7 @@ contract InstaVestingFactory {
     }
 
     function startVesting(
+        address delegator_,
         address recipient_,
         uint256 vestingAmount_,
         uint256 vestingBegin_,
@@ -58,13 +59,14 @@ contract InstaVestingFactory {
     ) public isMaster {
         require(recipients[recipient_] == address(0), 'VestingFactory::startVesting: unauthorized');
 
-        bytes32 salt = keccak256(abi.encode(recipient_, vestingAmount_, vestingBegin_, vestingCliff_, vestingEnd_));
+        bytes32 salt = keccak256(abi.encode(delegator_, recipient_, vestingAmount_, vestingBegin_, vestingCliff_, vestingEnd_));
 
         uint256 initGas = gasleft();
         address vesting = vestingImplementation.cloneDeterministic(salt);
 
         bytes memory initData = abi.encodeWithSignature(
-            "initialize(address,uint256,uint32,uint32,uint32)",
+            "initialize(address,address,uint256,uint32,uint32,uint32)",
+            delegator_,
             recipient_,
             vestingAmount_,
             uint32(vestingBegin_),
@@ -82,10 +84,11 @@ contract InstaVestingFactory {
 
         recipients[recipient_] = vesting;
 
-        emit LogVestingStarted(recipient_, vesting, vestingAmount_);
+        emit LogVestingStarted(delegator_, recipient_, vesting, vestingAmount_);
     }
 
     function startMultipleVesting(
+        address[] memory delegators_,
         address[] memory recipients_,
         uint[] memory vestingAmounts_,
         uint[] memory vestingBegins_,
@@ -95,7 +98,7 @@ contract InstaVestingFactory {
         uint _length = recipients_.length;
         require(vestingAmounts_.length == _length && vestingBegins_.length == _length && vestingCliffs_.length == _length && vestingEnds_.length == _length, "VestingFactory::startMultipleVesting: different lengths");
         for (uint i = 0; i < _length; i++) {
-            startVesting(recipients_[i], vestingAmounts_[i], vestingBegins_[i], vestingCliffs_[i], vestingEnds_[i]);
+            startVesting(delegators_[i], recipients_[i], vestingAmounts_[i], vestingBegins_[i], vestingCliffs_[i], vestingEnds_[i]);
         }
     }
 
