@@ -21,7 +21,7 @@ contract InstaTokenVesting is Initializable {
     event LogDelegate(address indexed _delegate);
 
     address public constant token = 0x6f40d4A6237C257fff2dB00FA0510DeEECd303eb;
-    address public constant factory = address(0); // TODO: Add static factory address
+    address public immutable factory;
     address public delegator;
     address public recipient;
 
@@ -33,6 +33,10 @@ contract InstaTokenVesting is Initializable {
     uint32 public lastUpdate;
 
     uint32 public terminateTime;
+
+    constructor(address factory_) {
+        factory = factory_;
+    }
 
     function initialize(
         address delegator_,

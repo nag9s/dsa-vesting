@@ -13,26 +13,23 @@ describe("Factory", function() {
     accounts = await ethers.getSigners();
     owner = ethers.provider.getSigner(masterAddress)
     
-    const Token = await ethers.getContractFactory("MockToken");
-    token = await Token.deploy("Token", "TKN");
-
-    await token.deployed()
+    token = await ethers.getContractAt("MockToken", "0x6f40d4A6237C257fff2dB00FA0510DeEECd303eb");
 
     console.log("Token address:", token.address)
 
     const Factory = await ethers.getContractFactory("InstaVestingFactory");
-    factory = await Factory.deploy(token.address);
+    factory = await Factory.deploy();
 
     await factory.deployed()
 
     console.log("Factory address:", factory.address)
 
     const TokenVesting = await ethers.getContractFactory("InstaTokenVesting");
-    tokenVesting = await TokenVesting.deploy();
+    tokenVesting = await TokenVesting.deploy(factory.address);
 
     await tokenVesting.deployed()
 
-    await token.mint(factory.address, ethers.utils.parseEther("1000000"));
+    await token.connect(owner).transfer(factory.address, ethers.utils.parseEther("1000000"));
 
     await factory.connect(owner).setImplementation(tokenVesting.address);
 
@@ -70,6 +67,7 @@ describe("Factory", function() {
       const vestingAmount = ethers.utils.parseEther("100")
 
       const tx = await factory.connect(owner).startVesting(
+        receipient.address,
         receipient.address,
         vestingAmount,
         vestingStart,
@@ -211,6 +209,7 @@ describe("Factory", function() {
       const receipient2 = accounts[4];
 
       const receipients = [receipient1.address, receipient2.address]
+      const delegators = [receipient1.address, receipient2.address]
 
       const vestingStart = vestingEndTs + 10
       const vestingCliff = vestingStart + 20
@@ -225,6 +224,7 @@ describe("Factory", function() {
       const vestingAmounts = [vestingAmount1, vestingAmount2]
 
       const tx = await factory.connect(owner).startMultipleVesting(
+        delegators,
         receipients,
         vestingAmounts,
         vestingStarts,
