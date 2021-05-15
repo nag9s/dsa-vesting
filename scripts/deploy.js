@@ -7,20 +7,21 @@ const hre = require("hardhat");
 const { ethers } = hre;
 
 async function main() {
-  const token = "0x0000000000000000000000000000000000000002"
-
-  const Vesting = await ethers.getContractFactory("TokenVesting");
-  const vesting = await Vesting.deploy();
-
-  await vesting.deployed();
-
   const VestingFactory = await ethers.getContractFactory("VestingFactory");
   const factory = await VestingFactory.deploy(token);
 
   await factory.deployed();
 
+  const Vesting = await ethers.getContractFactory("TokenVesting");
+  const vesting = await Vesting.deploy(factory.address);
+
+  await vesting.deployed();
+
   console.log("Factory deployed to:", factory.address);
   console.log("Implementation deployed to:", vesting.address);
+
+  await factory.setImplementation(vesting.address)
+
 
   await hre.run("verify:verify", {
     address: vesting.address,
@@ -29,7 +30,7 @@ async function main() {
 
   await hre.run("verify:verify", {
     address: factory.address,
-    constructorArguments: [token]
+    constructorArguments: []
   })
 }
 
