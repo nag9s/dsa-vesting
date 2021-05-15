@@ -3,8 +3,6 @@ pragma solidity ^0.7.0;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
-import "hardhat/console.sol";
-
 interface TokenInterface {
     function balanceOf(address account) external view returns (uint);
     function delegate(address delegatee) external;
@@ -26,15 +24,11 @@ contract InstaVestingFactory {
     event LogRecipient(address indexed _vesting, address indexed _old, address indexed _new);
     event LogTerminate(address indexed recipient, address indexed vesting, uint timestamp);
 
-    TokenInterface public immutable token;
-    address public vestingImplementation;
+    TokenInterface public constant token = TokenInterface(0x6f40d4A6237C257fff2dB00FA0510DeEECd303eb);
     IndexInterface public constant instaIndex = IndexInterface(0x2971AdFa57b20E5a416aE5a708A8655A9c74f723);
+    address public vestingImplementation;
 
     mapping(address => address) public recipients;
-
-    constructor(address token_) {
-        token = TokenInterface(token_);
-    }
 
     /**
      * @dev Throws if the sender not is Master Address from InstaIndex
@@ -61,7 +55,6 @@ contract InstaVestingFactory {
 
         bytes32 salt = keccak256(abi.encode(delegator_, recipient_, vestingAmount_, vestingBegin_, vestingCliff_, vestingEnd_));
 
-        uint256 initGas = gasleft();
         address vesting = vestingImplementation.cloneDeterministic(salt);
 
         bytes memory initData = abi.encodeWithSignature(
@@ -75,8 +68,6 @@ contract InstaVestingFactory {
         );
 
         (bool success,) = vesting.call(initData);
-        uint256 finalGas = initGas - gasleft();
-        console.log(finalGas);
 
         require(success, 'VestingFactory::startVesting: failed to initialize');
 
