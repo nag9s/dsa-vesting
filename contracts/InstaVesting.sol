@@ -20,9 +20,10 @@ contract InstaTokenVesting is Initializable {
     event LogClaim(uint _claimAmount);
     event LogDelegate(address indexed _delegate);
 
-    address public constant token = 0x3Aa5ebB10DC797CAC828524e59A333d0A371443c; // TODO: Add static token address
+    address public constant token = 0x6f40d4A6237C257fff2dB00FA0510DeEECd303eb;
+    address public constant factory = address(0); // TODO: Add static factory address
+    address public delegator;
     address public recipient;
-    address public constant factory = 0xc6e7DF5E7b4f2A278906862b61205850344D4e7d; // TODO: Add static factory address
 
     uint256 public vestingAmount;
     uint32 public vestingBegin;
@@ -34,6 +35,7 @@ contract InstaTokenVesting is Initializable {
     uint32 public terminateTime;
 
     function initialize(
+        address delegator_,
         address recipient_,
         uint256 vestingAmount_,
         uint32 vestingBegin_,
@@ -44,6 +46,7 @@ contract InstaTokenVesting is Initializable {
         require(vestingCliff_ >= vestingBegin_, 'TokenVesting::initialize: cliff is too early');
         require(vestingEnd_ > vestingCliff_, 'TokenVesting::initialize: end is too early');
 
+        if (delegator_ != address(0)) delegator = delegator_;
         recipient = recipient_;
 
         vestingAmount = vestingAmount_;
@@ -58,6 +61,11 @@ contract InstaTokenVesting is Initializable {
         require(msg.sender == recipient, 'TokenVesting::setRecipient: unauthorized');
         recipient = recipient_;
         VestingFactoryInterface(factory).updateRecipient(msg.sender, recipient);
+    }
+
+    function updateDelegator(address delegator_) public {
+        require(msg.sender == delegator, 'TokenVesting::setRecipient: unauthorized');
+        delegator = delegator_;
     }
 
     function claim() public {
@@ -75,7 +83,7 @@ contract InstaTokenVesting is Initializable {
     }
 
     function delegate(address delegatee_) public {
-        require(msg.sender == recipient, 'TokenVesting::delegate: unauthorized');
+        require(msg.sender == recipient || msg.sender == delegator, 'TokenVesting::delegate: unauthorized');
         TokenInterface(token).delegate(delegatee_);
         emit LogDelegate(delegatee_);
     }
