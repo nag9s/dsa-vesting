@@ -64,7 +64,7 @@ contract InstaTokenVesting is Initializable {
     }
 
     function updateDelegator(address delegator_) public {
-        require(msg.sender == delegator, 'TokenVesting::setRecipient: unauthorized');
+        require(msg.sender == delegator || msg.sender == recipient, 'TokenVesting::setRecipient: unauthorized');
         delegator = delegator_;
     }
 
