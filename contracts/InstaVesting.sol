@@ -20,10 +20,10 @@ contract InstaTokenVesting is Initializable {
     event LogClaim(uint _claimAmount);
     event LogDelegate(address indexed _delegate);
 
-    address public constant token = 0x3Aa5ebB10DC797CAC828524e59A333d0A371443c; // TODO: Add static token address
+    address public constant token = 0x6f40d4A6237C257fff2dB00FA0510DeEECd303eb;
+    address public constant factory = address(0); // TODO: Add static factory address
     address public delegator;
     address public recipient;
-    address public constant factory = 0xc6e7DF5E7b4f2A278906862b61205850344D4e7d; // TODO: Add static factory address
 
     uint256 public vestingAmount;
     uint32 public vestingBegin;
