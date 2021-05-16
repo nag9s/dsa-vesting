@@ -6,8 +6,9 @@ require("@nomiclabs/hardhat-etherscan");
 require("dotenv").config();
 const ALCHEMY_ID = process.env.ALCHEMY_ID;
 
-// You need to export an object to set up your config
-// Go to https://hardhat.org/config/ to learn more
+const { utils } = require("ethers");
+
+const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -22,6 +23,12 @@ module.exports = {
         blockNumber: 12441069,
       },
       blockGasLimit: 12000000,
+    },
+    mainnet: {
+      url: `https://eth.alchemyapi.io/v2/${ALCHEMY_ID}`,
+      accounts: [`0x${PRIVATE_KEY}`],
+      timeout: 150000,
+      gasPrice: parseInt(utils.parseUnits("52", "gwei"))
     },
   },
   etherscan: {
