@@ -2,6 +2,7 @@
 pragma solidity ^0.7.0;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 interface TokenInterface {
     function balanceOf(address account) external view returns (uint);
@@ -17,7 +18,7 @@ interface InstaVestingInterface {
     function terminate() external;
 }
 
-contract InstaVestingFactory {
+contract InstaVestingFactory is Ownable {
     using Clones for address;
 
     event LogVestingStarted(
@@ -47,14 +48,14 @@ contract InstaVestingFactory {
     mapping(address => Recipient) public recipients;
 
     /**
-     * @dev Throws if the sender not is Master Address from InstaIndex
+     * @dev Throws if the sender not is Master Address from InstaIndex or owner
     */
-    modifier isMaster {
-        require(msg.sender == instaIndex.master(), "not-master");
+    modifier isOwner {
+        require(_msgSender() == instaIndex.master() || owner() == _msgSender(), "caller is not the owner or master");
         _;
     }
 
-    function setImplementation(address _vestingImplementation) external isMaster {
+    function setImplementation(address _vestingImplementation) external isOwner {
         require(vestingImplementation == address(0), 'VestingFactory::startVesting: unauthorized');
         vestingImplementation = _vestingImplementation;
     }
@@ -67,7 +68,7 @@ contract InstaVestingFactory {
         uint256 vestingBegin_,
         uint256 vestingCliff_,
         uint256 vestingEnd_
-    ) public isMaster {
+    ) public isOwner {
         require(recipients[recipient_].vesting == address(0), 'VestingFactory::startVesting: unauthorized');
 
         bytes32 salt = keccak256(abi.encode(delegator_, recipient_, vestingAmount_, vestingBegin_, vestingCliff_, vestingEnd_));
@@ -106,7 +107,7 @@ contract InstaVestingFactory {
         uint[] memory vestingBegins_,
         uint[] memory vestingCliffs_,
         uint[] memory vestingEnds_
-    ) public isMaster {
+    ) public isOwner {
         uint _length = recipients_.length;
         require(
             vestingAmounts_.length == _length &&
@@ -141,10 +142,9 @@ contract InstaVestingFactory {
         InstaVestingInterface(recipient.vesting).terminate();
 
         emit LogTerminate(_recipient, recipient.vesting, msg.sender, block.timestamp);
-        // TODO @KaymasJain: should we delete the mapping?
     }
 
-    function withdraw(uint _amt) public isMaster {
+    function withdraw(uint _amt) public isOwner {
         require(token.balanceOf(address(this)) >= _amt, 'VestingFactory::withdraw: insufficient balance');
         token.transfer(instaIndex.master(), _amt);
     }
