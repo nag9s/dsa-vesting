@@ -47,6 +47,10 @@ contract InstaVestingFactory is Ownable {
 
     mapping(address => Recipient) public recipients;
 
+    constructor (address _owner) public {
+        transferOwnership(_owner);
+    }
+
     /**
      * @dev Throws if the sender not is Master Address from InstaIndex or owner
     */
