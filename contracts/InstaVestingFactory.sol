@@ -20,15 +20,31 @@ interface InstaVestingInterface {
 contract InstaVestingFactory {
     using Clones for address;
 
-    event LogVestingStarted(address indexed delegator, address indexed recipient, address indexed vesting, uint amount);
+    event LogVestingStarted(
+        address indexed delegator,
+        address indexed recipient,
+        address indexed vesting,
+        address owner,
+        uint256 amount
+    );
     event LogRecipient(address indexed _vesting, address indexed _old, address indexed _new);
-    event LogTerminate(address indexed recipient, address indexed vesting, uint timestamp);
+    event LogTerminate(
+        address indexed recipient,
+        address indexed vesting,
+        address indexed sender,
+        uint256 timestamp
+    );
 
     TokenInterface public constant token = TokenInterface(0x6f40d4A6237C257fff2dB00FA0510DeEECd303eb);
     IndexInterface public constant instaIndex = IndexInterface(0x2971AdFa57b20E5a416aE5a708A8655A9c74f723);
     address public vestingImplementation;
 
-    mapping(address => address) public recipients;
+    struct Recipient {
+        address vesting;
+        address owner;
+    }
+
+    mapping(address => Recipient) public recipients;
 
     /**
      * @dev Throws if the sender not is Master Address from InstaIndex
@@ -44,6 +60,7 @@ contract InstaVestingFactory {
     }
 
     function startVesting(
+        address owner_,
         address delegator_,
         address recipient_,
         uint256 vestingAmount_,
@@ -51,7 +68,7 @@ contract InstaVestingFactory {
         uint256 vestingCliff_,
         uint256 vestingEnd_
     ) public isMaster {
-        require(recipients[recipient_] == address(0), 'VestingFactory::startVesting: unauthorized');
+        require(recipients[recipient_].vesting == address(0), 'VestingFactory::startVesting: unauthorized');
 
         bytes32 salt = keccak256(abi.encode(delegator_, recipient_, vestingAmount_, vestingBegin_, vestingCliff_, vestingEnd_));
 
@@ -73,12 +90,16 @@ contract InstaVestingFactory {
 
         token.transfer(vesting, vestingAmount_);
 
-        recipients[recipient_] = vesting;
+        recipients[recipient_] = Recipient({
+            vesting: vesting,
+            owner: owner_
+        });
 
-        emit LogVestingStarted(delegator_, recipient_, vesting, vestingAmount_);
+        emit LogVestingStarted(delegator_, recipient_, vesting, owner_, vestingAmount_);
     }
 
     function startMultipleVesting(
+        address[] memory owners_,
         address[] memory delegators_,
         address[] memory recipients_,
         uint[] memory vestingAmounts_,
@@ -87,25 +108,40 @@ contract InstaVestingFactory {
         uint[] memory vestingEnds_
     ) public isMaster {
         uint _length = recipients_.length;
-        require(vestingAmounts_.length == _length && vestingBegins_.length == _length && vestingCliffs_.length == _length && vestingEnds_.length == _length, "VestingFactory::startMultipleVesting: different lengths");
+        require(
+            vestingAmounts_.length == _length &&
+            vestingBegins_.length == _length &&
+            vestingCliffs_.length == _length &&
+            vestingEnds_.length == _length , "VestingFactory::startMultipleVesting: different lengths");
+
         for (uint i = 0; i < _length; i++) {
-            startVesting(delegators_[i], recipients_[i], vestingAmounts_[i], vestingBegins_[i], vestingCliffs_[i], vestingEnds_[i]);
+            startVesting(
+                owners_[i],
+                delegators_[i],
+                recipients_[i],
+                vestingAmounts_[i],
+                vestingBegins_[i],
+                vestingCliffs_[i],
+                vestingEnds_[i]
+            );
         }
     }
 
     function updateRecipient(address _oldRecipient, address _newRecipient) public {
-        address _vesting = recipients[_oldRecipient];
+        address _vesting = recipients[_oldRecipient].vesting;
         require(msg.sender == _vesting, 'VestingFactory::startVesting: unauthorized');
-        recipients[_newRecipient] = _vesting;
+        recipients[_newRecipient].vesting = _vesting;
         delete recipients[_oldRecipient];
         emit LogRecipient(_vesting, _oldRecipient, _newRecipient);
     }
 
-    function terminate(address _recipient) public isMaster {
-        address _vesting = recipients[_recipient];
-        InstaVestingInterface(_vesting).terminate();
+    function terminate(address _recipient) public {
+        Recipient memory recipient = recipients[_recipient];
+        require(msg.sender == instaIndex.master() || msg.sender == recipient.owner, "VestingFactory::startVesting: unauthorized");
+        InstaVestingInterface(recipient.vesting).terminate();
 
-        emit LogTerminate(_recipient, _vesting, block.timestamp);
+        emit LogTerminate(_recipient, recipient.vesting, msg.sender, block.timestamp);
+        // TODO @KaymasJain: should we delete the mapping?
     }
 
     function withdraw(uint _amt) public isMaster {
