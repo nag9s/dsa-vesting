@@ -146,7 +146,7 @@ contract InstaVestingFactory is Ownable {
 
     function withdraw(uint _amt) public isOwner {
         require(token.balanceOf(address(this)) >= _amt, 'VestingFactory::withdraw: insufficient balance');
-        token.transfer(instaIndex.master(), _amt);
+        token.transfer(owner(), _amt);
     }
 
 }
