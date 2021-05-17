@@ -88,7 +88,7 @@ contract InstaVestingFactory {
 
         require(success, 'VestingFactory::startVesting: failed to initialize');
 
-        token.transfer(vesting, vestingAmount_);
+        require(token.transfer(vesting, vestingAmount_), "VestingFactory::startVesting: not-enough-token");
 
         recipients[recipient_] = Recipient({
             vesting: vesting,

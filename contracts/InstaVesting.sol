@@ -82,7 +82,7 @@ contract InstaTokenVesting is Initializable {
             amount = vestingAmount.mul(block.timestamp - lastUpdate).div(vestingEnd - vestingBegin);
             lastUpdate = uint32(block.timestamp);
         }
-        TokenInterface(token).transfer(recipient, amount);
+        require(TokenInterface(token).transfer(recipient, amount), "TokenVesting::claim: not-enough-token");
         emit LogClaim(amount);
     }
 
