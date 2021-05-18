@@ -22,7 +22,6 @@ contract InstaTokenVesting is Initializable {
 
     address public constant token = 0x6f40d4A6237C257fff2dB00FA0510DeEECd303eb;
     address public immutable factory;
-    address public delegator;
     address public recipient;
 
     uint256 public vestingAmount;
@@ -39,7 +38,6 @@ contract InstaTokenVesting is Initializable {
     }
 
     function initialize(
-        address delegator_,
         address recipient_,
         uint256 vestingAmount_,
         uint32 vestingBegin_,
@@ -50,7 +48,6 @@ contract InstaTokenVesting is Initializable {
         require(vestingCliff_ >= vestingBegin_, 'TokenVesting::initialize: cliff is too early');
         require(vestingEnd_ > vestingCliff_, 'TokenVesting::initialize: end is too early');
 
-        if (delegator_ != address(0)) delegator = delegator_;
         recipient = recipient_;
 
         vestingAmount = vestingAmount_;
@@ -67,11 +64,6 @@ contract InstaTokenVesting is Initializable {
         VestingFactoryInterface(factory).updateRecipient(msg.sender, recipient);
     }
 
-    function updateDelegator(address delegator_) public {
-        require(msg.sender == delegator || msg.sender == recipient, 'TokenVesting::setRecipient: unauthorized');
-        delegator = delegator_;
-    }
-
     function claim() public {
         require(block.timestamp >= vestingCliff, 'TokenVesting::claim: not time yet');
         require(terminateTime == 0, 'TokenVesting::claim: already terminated');
@@ -86,13 +78,7 @@ contract InstaTokenVesting is Initializable {
         emit LogClaim(amount);
     }
 
-    function delegate(address delegatee_) public {
-        require(msg.sender == recipient || msg.sender == delegator, 'TokenVesting::delegate: unauthorized');
-        TokenInterface(token).delegate(delegatee_);
-        emit LogDelegate(delegatee_);
-    }
-
-    function terminate() public {
+    function terminate(address _to) public {
         require(terminateTime == 0, 'TokenVesting::terminate: already terminated');
         require(msg.sender == factory, 'TokenVesting::terminate: unauthorized');
 
@@ -100,7 +86,7 @@ contract InstaTokenVesting is Initializable {
 
         TokenInterface token_ = TokenInterface(token);
         uint amount = token_.balanceOf(address(this));
-        token_.transfer(factory, amount);
+        token_.transfer(_to, amount);
 
         terminateTime = uint32(block.timestamp);
     }
