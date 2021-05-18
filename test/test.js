@@ -3,7 +3,7 @@ const { expect } = require("chai");
 const { ethers, network } = hre;
 
 describe("Factory", function() {
-  let token, tokenVesting, factory, accounts, owner, ethereum, masterAddress
+  let token, tokenVesting, factory, accounts, owner, ethereum, masterAddress, terminateOwner, factoryOwner
   before(async function() {
     masterAddress = "0xb1DC62EC38E6E3857a887210C38418E4A17Da5B2"
     await hre.network.provider.request({
@@ -11,6 +11,8 @@ describe("Factory", function() {
       params: [ masterAddress ]
     })
     accounts = await ethers.getSigners();
+    terminateOwner = accounts[7]
+    factoryOwner = accounts[8]
     owner = ethers.provider.getSigner(masterAddress)
     
     token = await ethers.getContractAt("MockToken", "0x6f40d4A6237C257fff2dB00FA0510DeEECd303eb");
@@ -18,7 +20,7 @@ describe("Factory", function() {
     console.log("Token address:", token.address)
 
     const Factory = await ethers.getContractFactory("InstaVestingFactory");
-    factory = await Factory.deploy();
+    factory = await Factory.deploy(factoryOwner.address);
 
     await factory.deployed()
 
@@ -66,8 +68,8 @@ describe("Factory", function() {
       const vestingEnd = Math.round(aMonth.getTime() / 1000)
       const vestingAmount = ethers.utils.parseEther("100")
 
-      const tx = await factory.connect(owner).startVesting(
-        receipient.address,
+      const tx = await factory.connect(factoryOwner).startVesting(
+        terminateOwner.address,
         receipient.address,
         vestingAmount,
         vestingStart,
@@ -79,19 +81,22 @@ describe("Factory", function() {
 
       expect(tx).to.emit(factory, "LogVestingStarted")
 
+      
       const deployedVesting = await factory.recipients(receipient.address)
-
-      const vesting_ = await ethers.getContractAt("InstaTokenVesting", deployedVesting)
+      await token.connect(owner).transfer(deployedVesting.vesting, vestingAmount);
+      
+      const vesting_ = await ethers.getContractAt("InstaTokenVesting", deployedVesting.vesting)
 
       const token_ = await vesting_.token();
       const recipient_ = await vesting_.recipient();
       const factory_ = await vesting_.factory();
       const vestingAmount_ = await vesting_.vestingAmount();
-      const vestingBalance_ = await token.balanceOf(deployedVesting);
+      const vestingBalance_ = await token.balanceOf(deployedVesting.vesting);
       const vestingStart_ = await vesting_.vestingBegin();
       const vestingCliff_ = await vesting_.vestingCliff();
       const vestingEnd_ = await vesting_.vestingEnd();
-
+      const owner_ = deployedVesting.owner;
+      
       vestingStartTs = vestingStart_;
       vestingCliffTs = vestingCliff_;
       vestingEndTs = vestingEnd_;
@@ -100,6 +105,7 @@ describe("Factory", function() {
 
       expect(token_).to.be.equal(token.address);
       expect(recipient_).to.be.equal(receipient.address);
+      expect(owner_).to.be.equal(terminateOwner.address);
       expect(factory_).to.be.equal(factory.address);
       expect(vestingAmount_).to.be.equal(vestingAmount);
       expect(vestingBalance_).to.be.equal(vestingAmount_);
@@ -154,16 +160,16 @@ describe("Factory", function() {
       expect(recipient_).to.be.equal(newReceipient.address)
 
       const vesting_ = await factory.recipients(newReceipient.address)
-      expect(vesting_).to.be.equal(vesting.address)
+      expect(vesting_.vesting).to.be.equal(vesting.address)
 
       const vesting__ = await factory.recipients(receipient.address)
-      expect(vesting__).to.be.not.equal(vesting.address)
+      expect(vesting__.vesting).to.be.not.equal(vesting.address)
     })
 
     it("recipient can claim after cliff", async function() {
       const receipient = accounts[2];
 
-      await ethereum.send("evm_setNextBlockTimestamp", [vestingCliffTs + 34]);
+      await ethereum.send("evm_setNextBlockTimestamp", [vestingCliffTs + 36]);
       await ethereum.send("evm_mine", []);
 
       const initBalance = await token.balanceOf(vesting.address);
@@ -209,7 +215,7 @@ describe("Factory", function() {
       const receipient2 = accounts[4];
 
       const receipients = [receipient1.address, receipient2.address]
-      const delegators = [receipient1.address, receipient2.address]
+      const owners = [terminateOwner.address, terminateOwner.address]
 
       const vestingStart = vestingEndTs + 10
       const vestingCliff = vestingStart + 20
@@ -224,7 +230,7 @@ describe("Factory", function() {
       const vestingAmounts = [vestingAmount1, vestingAmount2]
 
       const tx = await factory.connect(owner).startMultipleVesting(
-        delegators,
+        owners,
         receipients,
         vestingAmounts,
         vestingStarts,
@@ -237,14 +243,18 @@ describe("Factory", function() {
       expect(tx).to.emit(factory, "LogVestingStarted")
 
       const deployedVesting = await factory.recipients(receipient1.address)
+      const deployedVesting2 = await factory.recipients(receipient2.address)
+      await token.connect(owner).transfer(deployedVesting.vesting, vestingAmount1);
+      await token.connect(owner).transfer(deployedVesting2.vesting, vestingAmount2);
 
-      const vesting_ = await ethers.getContractAt("InstaTokenVesting", deployedVesting)
+
+      const vesting_ = await ethers.getContractAt("InstaTokenVesting", deployedVesting.vesting)
 
       const token_ = await vesting_.token();
       const recipient_ = await vesting_.recipient();
       const factory_ = await vesting_.factory();
       const vestingAmount_ = await vesting_.vestingAmount();
-      const vestingBalance_ = await token.balanceOf(deployedVesting);
+      const vestingBalance_ = await token.balanceOf(deployedVesting.vesting);
       const vestingStart_ = await vesting_.vestingBegin();
       const vestingCliff_ = await vesting_.vestingCliff();
       const vestingEnd_ = await vesting_.vestingEnd();
@@ -284,17 +294,41 @@ describe("Factory", function() {
       balanceAfterCalim = finalBalance
     })
 
-    it("owner can terminate", async function() {
+    it("terminateOwner can terminate", async function() {
       const receipient = accounts[3];
+      const to_ = accounts[9];
 
       const time = (vestingEndTs + vestingStartTs) / 2
 
       await ethereum.send("evm_setNextBlockTimestamp", [time]);
       await ethereum.send("evm_mine", []);
 
+      const initBalance = await token.balanceOf(to_.address);
+
+      const tx = await factory.connect(terminateOwner).terminate(receipient.address, to_.address)
+      await tx.wait()
+
+      const finalBalanceOfFactory = await token.balanceOf(to_.address);
+      expect(finalBalanceOfFactory).to.be.gt(initBalance);
+
+      const finalBalance = await token.balanceOf(receipient.address);
+      expect(finalBalance).to.be.gt(balanceAfterCalim);
+
+      const newTime = time + 25
+      await ethereum.send("evm_setNextBlockTimestamp", [newTime]);
+      await ethereum.send("evm_mine", []);
+
+      await expect(vesting.connect(receipient).claim()).to.be.revertedWith('TokenVesting::claim: already terminated');
+    })
+
+    it("owner can terminate", async function() {
+      const receipient = accounts[4];
+
+      const time = (vestingEndTs + vestingStartTs) / 1.5
+
       const initBalance = await token.balanceOf(factory.address);
 
-      const tx = await factory.connect(owner).terminate(receipient.address)
+      const tx = await factory.connect(owner).terminate(receipient.address, factory.address)
       await tx.wait()
 
       const finalBalanceOfFactory = await token.balanceOf(factory.address);
@@ -313,7 +347,7 @@ describe("Factory", function() {
     it("onwer can withdraw from factory", async function() {
       const initBalance = await token.balanceOf(masterAddress)
 
-      const tx = await factory.connect(owner).withdraw('100000')
+      const tx = await factory.connect(owner).withdraw('100')
       await tx.wait()
 
       const finalBalance = await token.balanceOf(masterAddress)

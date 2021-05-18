@@ -15,14 +15,13 @@ interface IndexInterface {
 }
 
 interface InstaVestingInterface {
-    function terminate() external;
+    function terminate(address _to) external;
 }
 
 contract InstaVestingFactory is Ownable {
     using Clones for address;
 
     event LogVestingStarted(
-        address indexed delegator,
         address indexed recipient,
         address indexed vesting,
         address owner,
@@ -66,7 +65,6 @@ contract InstaVestingFactory is Ownable {
 
     function startVesting(
         address owner_,
-        address delegator_,
         address recipient_,
         uint256 vestingAmount_,
         uint256 vestingBegin_,
@@ -75,13 +73,12 @@ contract InstaVestingFactory is Ownable {
     ) public isOwner {
         require(recipients[recipient_].vesting == address(0), 'VestingFactory::startVesting: unauthorized');
 
-        bytes32 salt = keccak256(abi.encode(delegator_, recipient_, vestingAmount_, vestingBegin_, vestingCliff_, vestingEnd_));
+        bytes32 salt = keccak256(abi.encode(recipient_, vestingAmount_, vestingBegin_, vestingCliff_, vestingEnd_));
 
         address vesting = vestingImplementation.cloneDeterministic(salt);
 
         bytes memory initData = abi.encodeWithSignature(
-            "initialize(address,address,uint256,uint32,uint32,uint32)",
-            delegator_,
+            "initialize(address,uint256,uint32,uint32,uint32)",
             recipient_,
             vestingAmount_,
             uint32(vestingBegin_),
@@ -93,19 +90,16 @@ contract InstaVestingFactory is Ownable {
 
         require(success, 'VestingFactory::startVesting: failed to initialize');
 
-        require(token.transfer(vesting, vestingAmount_), "VestingFactory::startVesting: not-enough-token");
-
         recipients[recipient_] = Recipient({
             vesting: vesting,
             owner: owner_
         });
 
-        emit LogVestingStarted(delegator_, recipient_, vesting, owner_, vestingAmount_);
+        emit LogVestingStarted(recipient_, vesting, owner_, vestingAmount_);
     }
 
     function startMultipleVesting(
         address[] memory owners_,
-        address[] memory delegators_,
         address[] memory recipients_,
         uint[] memory vestingAmounts_,
         uint[] memory vestingBegins_,
@@ -122,7 +116,6 @@ contract InstaVestingFactory is Ownable {
         for (uint i = 0; i < _length; i++) {
             startVesting(
                 owners_[i],
-                delegators_[i],
                 recipients_[i],
                 vestingAmounts_[i],
                 vestingBegins_[i],
@@ -140,10 +133,10 @@ contract InstaVestingFactory is Ownable {
         emit LogRecipient(_vesting, _oldRecipient, _newRecipient);
     }
 
-    function terminate(address _recipient) public {
+    function terminate(address _recipient, address _to) public {
         Recipient memory recipient = recipients[_recipient];
         require(msg.sender == instaIndex.master() || msg.sender == recipient.owner, "VestingFactory::startVesting: unauthorized");
-        InstaVestingInterface(recipient.vesting).terminate();
+        InstaVestingInterface(recipient.vesting).terminate(_to);
 
         emit LogTerminate(_recipient, recipient.vesting, msg.sender, block.timestamp);
     }
