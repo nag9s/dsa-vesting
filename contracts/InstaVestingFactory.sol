@@ -120,7 +120,7 @@ contract InstaVestingFactory is Ownable {
 
     function updateRecipient(address _oldRecipient, address _newRecipient) public {
         address _vesting = recipients[_oldRecipient];
-        require(msg.sender == _vesting, 'VestingFactory::startVesting: unauthorized');
+        require(msg.sender == _vesting, 'VestingFactory::updateRecipient: unauthorized');
         recipients[_newRecipient] = _vesting;
         delete recipients[_oldRecipient];
         emit LogRecipient(_vesting, _oldRecipient, _newRecipient);
