@@ -39,11 +39,6 @@ contract InstaVestingFactory is Ownable {
     IndexInterface public constant instaIndex = IndexInterface(0x2971AdFa57b20E5a416aE5a708A8655A9c74f723);
     address public vestingImplementation;
 
-    // struct Recipient {
-    //     address vesting;
-    //     address owner;
-    // }
-
     mapping(address => address) public recipients;
 
     constructor (address _owner) public {
