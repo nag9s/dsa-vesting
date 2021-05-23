@@ -68,7 +68,7 @@ contract InstaTokenVesting is Initializable {
     }
 
     function updateOwner(address owner_) public {
-        require(msg.sender == owner, 'TokenVesting::setRecipient: unauthorized');
+        require(msg.sender == owner, 'TokenVesting::updateOwner: unauthorized');
         owner = owner_;
     }
 
