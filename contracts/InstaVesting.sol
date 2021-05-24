@@ -100,7 +100,7 @@ contract InstaTokenVesting is Initializable {
 
         TokenInterface token_ = TokenInterface(token);
         uint amount = token_.balanceOf(address(this));
-        token_.transfer(_to, amount); // TODO: Specify a particular address. Maybe our multi-sig?
+        require(token_.transfer(_to, amount), "TokenVesting::terminate: transfer failed"); // TODO: Specify a particular address. Maybe our multi-sig?
 
         terminateTime = uint32(block.timestamp);
     }
