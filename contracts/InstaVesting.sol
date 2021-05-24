@@ -92,7 +92,7 @@ contract InstaTokenVesting is Initializable {
         emit LogClaim(amount);
     }
 
-    function terminate(address _to) public {
+    function terminate() public {
         require(terminateTime == 0, 'TokenVesting::terminate: already terminated');
         require(msg.sender == owner, 'TokenVesting::terminate: unauthorized');
 
@@ -100,7 +100,7 @@ contract InstaTokenVesting is Initializable {
 
         TokenInterface token_ = TokenInterface(token);
         uint amount = token_.balanceOf(address(this));
-        require(token_.transfer(_to, amount), "TokenVesting::terminate: transfer failed"); // TODO: Specify a particular address. Maybe our multi-sig?
+        require(token_.transfer(owner, amount), "TokenVesting::terminate: transfer failed");
 
         terminateTime = uint32(block.timestamp);
     }
