@@ -72,6 +72,12 @@ contract InstaTokenVesting is Initializable {
         owner = owner_;
     }
 
+    function delegate(address delegatee_) public {
+        require(msg.sender == recipient, 'TokenVesting::delegate: unauthorized');
+        TokenInterface(token).delegate(delegatee_);
+        emit LogDelegate(delegatee_);
+    }
+
     function claim() public {
         require(block.timestamp >= vestingCliff, 'TokenVesting::claim: not time yet');
         require(terminateTime == 0, 'TokenVesting::claim: already terminated');
