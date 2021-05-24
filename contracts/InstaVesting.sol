@@ -18,7 +18,10 @@ contract InstaTokenVesting is Initializable {
     using SafeMath for uint;
 
     event LogClaim(uint _claimAmount);
+    event LogRecipient(address indexed _delegate);
     event LogDelegate(address indexed _delegate);
+    event LogOwner(address indexed _newOwner);
+    event LogTerminate(address owner, uint tokenAmount, uint32 _terminateTime);
 
     address public constant token = 0x6f40d4A6237C257fff2dB00FA0510DeEECd303eb;
     address public immutable factory;
@@ -65,11 +68,13 @@ contract InstaTokenVesting is Initializable {
         require(msg.sender == recipient || msg.sender == owner, 'TokenVesting::updateRecipient: unauthorized');
         recipient = recipient_;
         VestingFactoryInterface(factory).updateRecipient(msg.sender, recipient);
+        emit LogRecipient(recipient);
     }
 
     function updateOwner(address owner_) public {
         require(msg.sender == owner, 'TokenVesting::updateOwner: unauthorized');
         owner = owner_;
+        emit LogOwner(owner);
     }
 
     function delegate(address delegatee_) public {
@@ -103,6 +108,8 @@ contract InstaTokenVesting is Initializable {
         require(token_.transfer(owner, amount), "TokenVesting::terminate: transfer failed");
 
         terminateTime = uint32(block.timestamp);
+
+        emit LogTerminate(owner, amount, terminateTime);
     }
 
 }
