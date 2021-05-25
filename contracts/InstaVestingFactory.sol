@@ -39,12 +39,7 @@ contract InstaVestingFactory is Ownable {
     IndexInterface public constant instaIndex = IndexInterface(0x2971AdFa57b20E5a416aE5a708A8655A9c74f723);
     address public vestingImplementation;
 
-    struct Recipient {
-        address vesting;
-        address owner;
-    }
-
-    mapping(address => Recipient) public recipients;
+    mapping(address => address) public recipients;
 
     constructor (address _owner) public {
         transferOwnership(_owner);
@@ -71,15 +66,16 @@ contract InstaVestingFactory is Ownable {
         uint256 vestingCliff_,
         uint256 vestingEnd_
     ) public isOwner {
-        require(recipients[recipient_].vesting == address(0), 'VestingFactory::startVesting: unauthorized');
+        require(recipients[recipient_] == address(0), 'VestingFactory::startVesting: unauthorized');
 
         bytes32 salt = keccak256(abi.encode(recipient_, vestingAmount_, vestingBegin_, vestingCliff_, vestingEnd_));
 
         address vesting = vestingImplementation.cloneDeterministic(salt);
 
         bytes memory initData = abi.encodeWithSignature(
-            "initialize(address,uint256,uint32,uint32,uint32)",
+            "initialize(address,address,uint256,uint32,uint32,uint32)",
             recipient_,
+            owner_,
             vestingAmount_,
             uint32(vestingBegin_),
             uint32(vestingCliff_),
@@ -90,10 +86,7 @@ contract InstaVestingFactory is Ownable {
 
         require(success, 'VestingFactory::startVesting: failed to initialize');
 
-        recipients[recipient_] = Recipient({
-            vesting: vesting,
-            owner: owner_
-        });
+        recipients[recipient_] = vesting;
 
         emit LogVestingStarted(recipient_, vesting, owner_, vestingAmount_);
     }
@@ -126,19 +119,11 @@ contract InstaVestingFactory is Ownable {
     }
 
     function updateRecipient(address _oldRecipient, address _newRecipient) public {
-        address _vesting = recipients[_oldRecipient].vesting;
-        require(msg.sender == _vesting, 'VestingFactory::startVesting: unauthorized');
-        recipients[_newRecipient].vesting = _vesting;
+        address _vesting = recipients[_oldRecipient];
+        require(msg.sender == _vesting, 'VestingFactory::updateRecipient: unauthorized');
+        recipients[_newRecipient] = _vesting;
         delete recipients[_oldRecipient];
         emit LogRecipient(_vesting, _oldRecipient, _newRecipient);
-    }
-
-    function terminate(address _recipient, address _to) public {
-        Recipient memory recipient = recipients[_recipient];
-        require(msg.sender == instaIndex.master() || msg.sender == recipient.owner, "VestingFactory::startVesting: unauthorized");
-        InstaVestingInterface(recipient.vesting).terminate(_to);
-
-        emit LogTerminate(_recipient, recipient.vesting, msg.sender, block.timestamp);
     }
 
     function withdraw(uint _amt) public isOwner {

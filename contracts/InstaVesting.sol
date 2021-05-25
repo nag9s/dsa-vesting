@@ -18,10 +18,14 @@ contract InstaTokenVesting is Initializable {
     using SafeMath for uint;
 
     event LogClaim(uint _claimAmount);
+    event LogRecipient(address indexed _delegate);
     event LogDelegate(address indexed _delegate);
+    event LogOwner(address indexed _newOwner);
+    event LogTerminate(address owner, uint tokenAmount, uint32 _terminateTime);
 
     address public constant token = 0x6f40d4A6237C257fff2dB00FA0510DeEECd303eb;
     address public immutable factory;
+    address public owner;
     address public recipient;
 
     uint256 public vestingAmount;
@@ -39,6 +43,7 @@ contract InstaTokenVesting is Initializable {
 
     function initialize(
         address recipient_,
+        address owner_,
         uint256 vestingAmount_,
         uint32 vestingBegin_,
         uint32 vestingCliff_,
@@ -48,6 +53,7 @@ contract InstaTokenVesting is Initializable {
         require(vestingCliff_ >= vestingBegin_, 'TokenVesting::initialize: cliff is too early');
         require(vestingEnd_ > vestingCliff_, 'TokenVesting::initialize: end is too early');
 
+        if (owner_ != address(0)) owner = owner_;
         recipient = recipient_;
 
         vestingAmount = vestingAmount_;
@@ -59,9 +65,22 @@ contract InstaTokenVesting is Initializable {
     }
 
     function updateRecipient(address recipient_) public {
-        require(msg.sender == recipient, 'TokenVesting::setRecipient: unauthorized');
+        require(msg.sender == recipient || msg.sender == owner, 'TokenVesting::updateRecipient: unauthorized');
         recipient = recipient_;
         VestingFactoryInterface(factory).updateRecipient(msg.sender, recipient);
+        emit LogRecipient(recipient);
+    }
+
+    function updateOwner(address owner_) public {
+        require(msg.sender == owner, 'TokenVesting::updateOwner: unauthorized');
+        owner = owner_;
+        emit LogOwner(owner);
+    }
+
+    function delegate(address delegatee_) public {
+        require(msg.sender == recipient, 'TokenVesting::delegate: unauthorized');
+        TokenInterface(token).delegate(delegatee_);
+        emit LogDelegate(delegatee_);
     }
 
     function claim() public {
@@ -78,17 +97,19 @@ contract InstaTokenVesting is Initializable {
         emit LogClaim(amount);
     }
 
-    function terminate(address _to) public {
+    function terminate() public {
         require(terminateTime == 0, 'TokenVesting::terminate: already terminated');
-        require(msg.sender == factory, 'TokenVesting::terminate: unauthorized');
+        require(msg.sender == owner, 'TokenVesting::terminate: unauthorized');
 
         claim();
 
         TokenInterface token_ = TokenInterface(token);
         uint amount = token_.balanceOf(address(this));
-        token_.transfer(_to, amount);
+        require(token_.transfer(owner, amount), "TokenVesting::terminate: transfer failed");
 
         terminateTime = uint32(block.timestamp);
+
+        emit LogTerminate(owner, amount, terminateTime);
     }
 
 }
