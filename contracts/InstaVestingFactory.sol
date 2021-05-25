@@ -65,7 +65,7 @@ contract InstaVestingFactory is Ownable {
         uint256 vestingBegin_,
         uint256 vestingCliff_,
         uint256 vestingEnd_
-    ) public isOwner {
+    ) public {
         require(recipients[recipient_] == address(0), 'VestingFactory::startVesting: unauthorized');
 
         bytes32 salt = keccak256(abi.encode(recipient_, vestingAmount_, vestingBegin_, vestingCliff_, vestingEnd_));
@@ -98,7 +98,7 @@ contract InstaVestingFactory is Ownable {
         uint[] memory vestingBegins_,
         uint[] memory vestingCliffs_,
         uint[] memory vestingEnds_
-    ) public isOwner {
+    ) public {
         uint _length = recipients_.length;
         require(
             vestingAmounts_.length == _length &&
