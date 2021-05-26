@@ -5,7 +5,9 @@ const fs = require('fs');
 const { expect } = require("chai");
 
 /*
- npx hardhat run scripts/vesting/vesting.js --network hardhat / kovan / mainnet 
+ For mainnet: npx hardhat run scripts/vesting/vesting.js --network mainnet 
+ For kovan: npx hardhat run scripts/vesting/vesting.js --network kovan 
+ For mainnet fork: npx hardhat run scripts/vesting/vesting.js --network hardhat
 */
 
 
