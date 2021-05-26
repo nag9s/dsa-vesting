@@ -23,7 +23,7 @@ contract InstaTokenVesting is Initializable {
     event LogOwner(address indexed _newOwner);
     event LogTerminate(address owner, uint tokenAmount, uint32 _terminateTime);
 
-    address public constant token = 0x6f40d4A6237C257fff2dB00FA0510DeEECd303eb;
+    TokenInterface public constant token = TokenInterface(0x6f40d4A6237C257fff2dB00FA0510DeEECd303eb);
     address public immutable factory;
     address public owner;
     address public recipient;
@@ -79,7 +79,7 @@ contract InstaTokenVesting is Initializable {
 
     function delegate(address delegatee_) public {
         require(msg.sender == recipient, 'TokenVesting::delegate: unauthorized');
-        TokenInterface(token).delegate(delegatee_);
+        token.delegate(delegatee_);
         emit LogDelegate(delegatee_);
     }
 
@@ -88,12 +88,12 @@ contract InstaTokenVesting is Initializable {
         require(terminateTime == 0, 'TokenVesting::claim: already terminated');
         uint amount;
         if (block.timestamp >= vestingEnd) {
-            amount = TokenInterface(token).balanceOf(address(this));
+            amount = token.balanceOf(address(this));
         } else {
             amount = vestingAmount.mul(block.timestamp - lastUpdate).div(vestingEnd - vestingBegin);
             lastUpdate = uint32(block.timestamp);
         }
-        require(TokenInterface(token).transfer(recipient, amount), "TokenVesting::claim: not-enough-token");
+        require(token.transfer(recipient, amount), "TokenVesting::claim: not-enough-token");
         emit LogClaim(amount);
     }
 
@@ -103,9 +103,8 @@ contract InstaTokenVesting is Initializable {
 
         claim();
 
-        TokenInterface token_ = TokenInterface(token);
-        uint amount = token_.balanceOf(address(this));
-        require(token_.transfer(owner, amount), "TokenVesting::terminate: transfer failed");
+        uint amount = token.balanceOf(address(this));
+        require(token.transfer(owner, amount), "TokenVesting::terminate: transfer failed");
 
         terminateTime = uint32(block.timestamp);
 
