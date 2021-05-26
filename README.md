@@ -9,8 +9,6 @@ Vesting Factory deploys all the vesting contracts and has tokens in it and has m
 
 [startMultipleVesting](https://github.com/Instadapp/dsa-vesting/blob/7b4909894654040235b31c42906fd973a886f8ec/contracts/InstaVestingFactory.sol#L90) starts multiple vesting in single transaction.
 
-[terminate](https://github.com/Instadapp/dsa-vesting/blob/7b4909894654040235b31c42906fd973a886f8ec/contracts/InstaVestingFactory.sol#L113) terminates the vesting by calling `terminate` function on vesting contract. Caller should be master address (aka governance)
-
 [withdraw](https://github.com/Instadapp/dsa-vesting/blob/7b4909894654040235b31c42906fd973a886f8ec/contracts/InstaVestingFactory.sol#L120) withdraw ideal tokens from factory contract.
 
 
@@ -21,4 +19,4 @@ Each recipient has their own Vesting contract which stores their tokens which ar
 
 [delegate](https://github.com/Instadapp/dsa-vesting/blob/7b4909894654040235b31c42906fd973a886f8ec/contracts/InstaVesting.sol#L85) delegates the tokens to defined address. `delegator` & `recipient` address can define the delegatee.
 
-[terminate](https://github.com/Instadapp/dsa-vesting/blob/7b4909894654040235b31c42906fd973a886f8ec/contracts/InstaVesting.sol#L91) to terminate the tokens vesting. Can be called by Vesting Factory whose access is with Governance.
+[terminate](https://github.com/Instadapp/dsa-vesting/blob/7b4909894654040235b31c42906fd973a886f8ec/contracts/InstaVesting.sol#L91) to terminate the tokens vesting. Can be called by each vesting contract owner (to not use it keep the owner at address(0)).
