@@ -30,6 +30,10 @@ module.exports = {
       timeout: 150000,
       gasPrice: parseInt(utils.parseUnits("60", "gwei"))
     },
+    kovan: {
+      url: `https://eth-kovan.alchemyapi.io/v2/${ALCHEMY_ID}`,
+      accounts: [`0x${PRIVATE_KEY}`]
+    },
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN

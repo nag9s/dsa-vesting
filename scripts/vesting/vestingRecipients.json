@@ -1,0 +1,18 @@
+[
+    {
+      "owner": "0xb1DC62EC38E6E3857a887210C38418E4A17Da5B2",
+      "recipient": "0x9F60699cE23f1Ab86Ec3e095b477Ff79d4f409AD",
+      "vestingAmount": "4000000000000000000000000",
+      "vestingBegin": 1625077800,
+      "vestingCliff": 1633026600,
+      "vestingEnd": 1759257000
+    },
+    {
+      "owner": "0xb1DC62EC38E6E3857a887210C38418E4A17Da5B2",
+      "recipient": "0x03d70891b8994feB6ccA7022B25c32be92ee3725",
+      "vestingAmount": "1000000000000000000000000",
+      "vestingBegin": 1625077800,
+      "vestingCliff": 1633026600,
+      "vestingEnd": 1759257000
+    }
+]
