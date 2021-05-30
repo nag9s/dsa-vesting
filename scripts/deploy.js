@@ -2,14 +2,23 @@ const hre = require("hardhat");
 const { ethers } = hre;
 
 async function main() {
+  let owner;
   if (hre.network.name === "mainnet") {
     console.log(
       "\n\n Deploying Contracts to mainnet. Hit ctrl + c to abort"
     );
+    owner = "0xb1DC62EC38E6E3857a887210C38418E4A17Da5B2"
+  } else if (hre.network.name === "kovan") {
+    console.log(
+      "\n\n Deploying Contracts to kovan. Hit ctrl + c to abort"
+    );
+    owner = "0x9F60699cE23f1Ab86Ec3e095b477Ff79d4f409AD"
+  } else {
+    owner = "0x9F60699cE23f1Ab86Ec3e095b477Ff79d4f409AD"
   }
 
   const VestingFactory = await ethers.getContractFactory("InstaVestingFactory");
-  const factory = await VestingFactory.deploy();
+  const factory = await VestingFactory.deploy(owner);
 
   await factory.deployed();
 
@@ -23,7 +32,7 @@ async function main() {
 
   // await factory.setImplementation(vesting.address)
 
-  if (hre.network.name === "mainnet") {
+  if (hre.network.name === "mainnet" || hre.network.name === "kovan") {
     await hre.run("verify:verify", {
       address: vesting.address,
       constructorArguments: [factory.address]
@@ -31,7 +40,7 @@ async function main() {
 
     await hre.run("verify:verify", {
       address: factory.address,
-      constructorArguments: []
+      constructorArguments: [owner]
     })
   } else {
     console.log("Contracts deployed")
