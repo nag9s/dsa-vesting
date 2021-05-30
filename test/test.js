@@ -83,19 +83,19 @@ describe("Factory", function() {
 
       
       const deployedVesting = await factory.recipients(receipient.address)
-      await token.connect(owner).transfer(deployedVesting.vesting, vestingAmount);
+      await token.connect(owner).transfer(deployedVesting, vestingAmount);
       
-      const vesting_ = await ethers.getContractAt("InstaTokenVesting", deployedVesting.vesting)
+      const vesting_ = await ethers.getContractAt("InstaTokenVesting", deployedVesting)
 
       const token_ = await vesting_.token();
       const recipient_ = await vesting_.recipient();
       const factory_ = await vesting_.factory();
       const vestingAmount_ = await vesting_.vestingAmount();
-      const vestingBalance_ = await token.balanceOf(deployedVesting.vesting);
+      const vestingBalance_ = await token.balanceOf(deployedVesting);
       const vestingStart_ = await vesting_.vestingBegin();
       const vestingCliff_ = await vesting_.vestingCliff();
       const vestingEnd_ = await vesting_.vestingEnd();
-      const owner_ = deployedVesting.owner;
+      const owner_ = await vesting_.owner();
       
       vestingStartTs = vestingStart_;
       vestingCliffTs = vestingCliff_;
@@ -160,10 +160,10 @@ describe("Factory", function() {
       expect(recipient_).to.be.equal(newReceipient.address)
 
       const vesting_ = await factory.recipients(newReceipient.address)
-      expect(vesting_.vesting).to.be.equal(vesting.address)
+      expect(vesting_).to.be.equal(vesting.address)
 
       const vesting__ = await factory.recipients(receipient.address)
-      expect(vesting__.vesting).to.be.not.equal(vesting.address)
+      expect(vesting__).to.be.not.equal(vesting.address)
     })
 
     it("recipient can claim after cliff", async function() {
@@ -244,17 +244,17 @@ describe("Factory", function() {
 
       const deployedVesting = await factory.recipients(receipient1.address)
       const deployedVesting2 = await factory.recipients(receipient2.address)
-      await token.connect(owner).transfer(deployedVesting.vesting, vestingAmount1);
-      await token.connect(owner).transfer(deployedVesting2.vesting, vestingAmount2);
+      await token.connect(owner).transfer(deployedVesting, vestingAmount1);
+      await token.connect(owner).transfer(deployedVesting2, vestingAmount2);
 
 
-      const vesting_ = await ethers.getContractAt("InstaTokenVesting", deployedVesting.vesting)
+      const vesting_ = await ethers.getContractAt("InstaTokenVesting", deployedVesting)
 
       const token_ = await vesting_.token();
       const recipient_ = await vesting_.recipient();
       const factory_ = await vesting_.factory();
       const vestingAmount_ = await vesting_.vestingAmount();
-      const vestingBalance_ = await token.balanceOf(deployedVesting.vesting);
+      const vestingBalance_ = await token.balanceOf(deployedVesting);
       const vestingStart_ = await vesting_.vestingBegin();
       const vestingCliff_ = await vesting_.vestingCliff();
       const vestingEnd_ = await vesting_.vestingEnd();
@@ -305,33 +305,14 @@ describe("Factory", function() {
 
       const initBalance = await token.balanceOf(to_.address);
 
-      const tx = await factory.connect(terminateOwner).terminate(receipient.address, to_.address)
+      const deployedVesting = await factory.recipients(receipient.address)
+      const vesting_ = await ethers.getContractAt("InstaTokenVesting", deployedVesting)
+
+
+      const tx = await vesting_.connect(terminateOwner).terminate()
       await tx.wait()
 
-      const finalBalanceOfFactory = await token.balanceOf(to_.address);
-      expect(finalBalanceOfFactory).to.be.gt(initBalance);
-
-      const finalBalance = await token.balanceOf(receipient.address);
-      expect(finalBalance).to.be.gt(balanceAfterCalim);
-
-      const newTime = time + 25
-      await ethereum.send("evm_setNextBlockTimestamp", [newTime]);
-      await ethereum.send("evm_mine", []);
-
-      await expect(vesting.connect(receipient).claim()).to.be.revertedWith('TokenVesting::claim: already terminated');
-    })
-
-    it("owner can terminate", async function() {
-      const receipient = accounts[4];
-
-      const time = (vestingEndTs + vestingStartTs) / 1.5
-
-      const initBalance = await token.balanceOf(factory.address);
-
-      const tx = await factory.connect(owner).terminate(receipient.address, factory.address)
-      await tx.wait()
-
-      const finalBalanceOfFactory = await token.balanceOf(factory.address);
+      const finalBalanceOfFactory = await token.balanceOf(terminateOwner.address);
       expect(finalBalanceOfFactory).to.be.gt(initBalance);
 
       const finalBalance = await token.balanceOf(receipient.address);
@@ -345,12 +326,14 @@ describe("Factory", function() {
     })
 
     it("onwer can withdraw from factory", async function() {
-      const initBalance = await token.balanceOf(masterAddress)
+      await token.connect(owner).transfer(factory.address, ethers.utils.parseEther("1000"));
+
+      const initBalance = await token.balanceOf(factoryOwner.address)
 
       const tx = await factory.connect(owner).withdraw('100')
       await tx.wait()
 
-      const finalBalance = await token.balanceOf(masterAddress)
+      const finalBalance = await token.balanceOf(factoryOwner.address)
       expect(finalBalance).to.be.gt(initBalance)
     })
   })
