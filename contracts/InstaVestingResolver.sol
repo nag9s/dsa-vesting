@@ -68,11 +68,11 @@ contract InstaTokenVestingResolver  {
         uint256 vestedAmount;
         uint256 unvestedAmount;
         if (block.timestamp > vestingCliff) {
-            uint256 timeNow = terminatedTime == 0 ? block.timestamp : terminatedTime;
-            vestedAmount = vestingAmount.mul(timeNow - vestingBegin).div(vestingEnd - vestingBegin);
+            uint256 time = terminatedTime == 0 ? block.timestamp : terminatedTime;
+            vestedAmount = vestingAmount.mul(time - vestingBegin).div(vestingEnd - vestingBegin);
             unvestedAmount = vestingAmount.sub(vestedAmount);
-            claimableAmount = vestingAmount.mul(timeNow - lastUpdate).div(vestingEnd - vestingBegin);
-            claimedAmount = vestedAmount.mul(timeNow - vestingBegin).div(vestingEnd - vestingBegin);
+            claimableAmount = vestingAmount.mul(time - lastUpdate).div(vestingEnd - vestingBegin);
+            claimedAmount = vestedAmount.mul(time - vestingBegin).div(vestingEnd - vestingBegin);
         }
 
         vestingData = VestingData({
