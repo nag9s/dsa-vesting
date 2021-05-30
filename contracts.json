@@ -1,4 +1,5 @@
 {
     "InstaVestingFactory": "0x3730D9b06bc23fd2E2F84f1202a7e80815dd054a",
-    "InstaTokenVesting": "0xC0d9210496afE9763F5d8cEb8deFfBa817232A9e"
+    "InstaTokenVesting": "0xC0d9210496afE9763F5d8cEb8deFfBa817232A9e",
+    "InstaVestingResolver": "0xaD5E5064F808Ae7E02164b2fD2E58F9df48A989a"
 }

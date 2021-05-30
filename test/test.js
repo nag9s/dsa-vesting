@@ -31,6 +31,11 @@ describe("Factory", function() {
 
     await tokenVesting.deployed()
 
+    const VestingResolver = await ethers.getContractFactory("InstaTokenVestingResolver");
+    vestingResolver = await VestingResolver.deploy(factory.address);
+
+    await vestingResolver.deployed()
+
     await token.connect(owner).transfer(factory.address, ethers.utils.parseEther("1000000"));
 
     await factory.connect(owner).setImplementation(tokenVesting.address);
@@ -112,6 +117,9 @@ describe("Factory", function() {
       expect(vestingStart_).to.be.equal(vestingStart);
       expect(vestingCliff_).to.be.equal(vestingCliff);
       expect(vestingEnd_).to.be.equal(vestingEnd);
+
+      const position = await vestingResolver.callStatic.getVestingByRecipient(receipient.address)
+      console.log("position", position)
     })
 
     it("recipient cannot claim before vesting start or cliff", async function () {
@@ -141,6 +149,8 @@ describe("Factory", function() {
       const tx = await vesting.connect(receipient).claim()
       await tx.wait()
 
+      const position = await vestingResolver.callStatic.getVestingByRecipient(receipient.address)
+      console.log("position", position)
       expect(tx).to.emit(vesting, "LogClaim")
 
       const finalBalance = await token.balanceOf(receipient.address);

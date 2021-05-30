@@ -29,7 +29,12 @@ contract InstaTokenVestingResolver  {
     using SafeMath for uint256;
 
     TokenInterface public constant token = TokenInterface(0x6f40d4A6237C257fff2dB00FA0510DeEECd303eb);
-    InstaVestingFactoryInterface public constant factory = InstaVestingFactoryInterface(0x3730D9b06bc23fd2E2F84f1202a7e80815dd054a);
+        // InstaVestingFactoryInterface public constant factory = InstaVestingFactoryInterface(0x3730D9b06bc23fd2E2F84f1202a7e80815dd054a);
+    InstaVestingFactoryInterface public immutable factory;
+
+    constructor(address factory_) {
+        factory = InstaVestingFactoryInterface(factory_);
+    }
 
     struct VestingData {
         address recipient;
