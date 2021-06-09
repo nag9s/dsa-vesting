@@ -20,7 +20,7 @@ async function main() {
     console.log(
       "\n\n Deploying Contracts to mainnet. Hit ctrl + c to abort"
     );
-    vestingFactoryAddr = "0x3730D9b06bc23fd2E2F84f1202a7e80815dd054a"
+    vestingFactoryAddr = "0x3b05a5295Aa749D78858E33ECe3b97bB3Ef4F029"
     if (vestingFactoryAddr === "") throw new Error("Set 'vestingFactoryAddr'")
     factory = await ethers.getContractAt("InstaVestingFactory", vestingFactoryAddr);
   } else if (hre.network.name === "kovan") {
