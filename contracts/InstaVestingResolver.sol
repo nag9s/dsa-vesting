@@ -59,8 +59,11 @@ contract InstaTokenVestingResolver  {
 
     function getVesting(address vesting) public view returns(VestingData memory vestingData) {
         if (vesting == address(0)) return vestingData;
+
         InstaVestingInferface VestingContract = InstaVestingInferface(vesting);
         uint256 vestingBegin = uint256(VestingContract.vestingBegin());
+
+        if (vestingBegin == 0) return vestingData;
         uint256 vestingEnd = uint256(VestingContract.vestingEnd());
         uint256 vestingCliff = uint256(VestingContract.vestingCliff());
         uint256 vestingAmount = VestingContract.vestingAmount();
