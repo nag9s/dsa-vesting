@@ -52,7 +52,7 @@ contract InstaTokenVestingResolver  {
         uint256 claimableAmount;
     }
 
-    function getVestingByrecipient(address recipient) external view returns(VestingData memory vestingData) {
+    function getVestingByRecipient(address recipient) external view returns(VestingData memory vestingData) {
         address vestingAddr = factory.recipients(recipient);
         return getVesting(vestingAddr);
     }
