@@ -2,6 +2,7 @@ require("@nomiclabs/hardhat-ethers");
 require("@nomiclabs/hardhat-waffle");
 require("solidity-coverage");
 require("@nomiclabs/hardhat-etherscan");
+require("@nomiclabs/hardhat-web3");
 
 require("dotenv").config();
 const ALCHEMY_ID = process.env.ALCHEMY_ID;
@@ -28,7 +29,7 @@ module.exports = {
       url: `https://eth.alchemyapi.io/v2/${ALCHEMY_ID}`,
       accounts: [`0x${PRIVATE_KEY}`],
       timeout: 150000,
-      gasPrice: parseInt(utils.parseUnits("25", "gwei"))
+      gasPrice: parseInt(utils.parseUnits("30", "gwei"))
     },
     kovan: {
       url: `https://eth-kovan.alchemyapi.io/v2/${ALCHEMY_ID}`,
