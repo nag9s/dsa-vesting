@@ -37,7 +37,7 @@ contract InstaVestingFactory is Ownable {
 
     function fundVestingContracts(
         address[] memory vestings
-    ) public {
+    ) public isOwner {
         uint _length = vestings.length;
 
         for (uint i = 0; i < _length; i++) {
