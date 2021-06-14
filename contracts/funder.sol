@@ -15,6 +15,7 @@ interface IndexInterface {
 
 interface InstaVestingInterface {
     function vestingAmount() external view returns (uint);
+    function factory() external view returns (address);
 }
 
 
@@ -43,6 +44,7 @@ contract InstaVestingFactory is Ownable {
         for (uint i = 0; i < _length; i++) {
             uint256 balanceOf = token.balanceOf(vestings[i]);
             uint256 vestingAmount = InstaVestingInterface(vestings[i]).vestingAmount();
+            require(factory == InstaVestingInterface(vestings[i]).factory(), "VestingFunder::fundVestingContracts: Other vesting contract");
             require(token.transfer(vestings[i], (vestingAmount - balanceOf)), "VestingFunder::fundVestingContracts: insufficient balance");
         }
     }
