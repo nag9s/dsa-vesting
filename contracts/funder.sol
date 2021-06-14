@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: Unlicense
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -43,8 +43,7 @@ contract InstaVestingFactory is Ownable {
         for (uint i = 0; i < _length; i++) {
             uint256 balanceOf = token.balanceOf(vestings[i]);
             uint256 vestingAmount = InstaVestingInterface(vestings[i]).vestingAmount();
-            if (balanceOf >= vestingAmount) continue;
-            require(token.transfer(vestings[i], vestingAmount), "VestingFunder::fundVestingContracts: insufficient balance");
+            require(token.transfer(vestings[i], (vestingAmount - balanceOf)), "VestingFunder::fundVestingContracts: insufficient balance");
         }
     }
 
